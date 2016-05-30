@@ -1,11 +1,11 @@
 package pdi.jwt
 
-import javax.crypto.{Mac, SecretKey}
-import javax.crypto.spec.SecretKeySpec
-import java.security.{Security, Signature, KeyFactory, Key, PrivateKey, PublicKey}
 import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
-import org.bouncycastle.jce.provider.BouncyCastleProvider
+import java.security._
+import javax.crypto.spec.SecretKeySpec
+import javax.crypto.{Mac, SecretKey}
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import pdi.jwt.algorithms._
 
 object JwtUtils {
@@ -41,7 +41,7 @@ object JwtUtils {
   } else {
     seq.map {
       case value: String => "\"" + escape(value) + "\""
-      case value: Boolean => (if (value) { "true" } else { "false" })
+      case value: Boolean => if (value) "true" else "false"
       case value: Double => value.toString
       case value: Short => value.toString
       case value: Float => value.toString
@@ -49,7 +49,7 @@ object JwtUtils {
       case value: Int => value.toString
       case value: BigDecimal => value.toString
       case value: BigInt => value.toString
-      case value: (String, Any) => hashToJson(Seq(value))
+      case (key: String, value: Any) => hashToJson(Seq((key, value)))
       case value: Any => "\"" + escape(value.toString) + "\""
     }.mkString("[", ",", "]")
   }
@@ -62,7 +62,7 @@ object JwtUtils {
   } else {
     hash.map {
       case (key, value: String) => "\"" + escape(key) + "\":\"" + escape(value) + "\""
-      case (key, value: Boolean) => "\"" + escape(key) + "\":" + (if (value) { "true" } else { "false" })
+      case (key, value: Boolean) => "\"" + escape(key) + "\":" + (if (value) "true" else "false")
       case (key, value: Double) => "\"" + escape(key) + "\":" + value.toString
       case (key, value: Short) => "\"" + escape(key) + "\":" + value.toString
       case (key, value: Float) => "\"" + escape(key) + "\":" + value.toString
@@ -70,7 +70,7 @@ object JwtUtils {
       case (key, value: Int) => "\"" + escape(key) + "\":" + value.toString
       case (key, value: BigDecimal) => "\"" + escape(key) + "\":" + value.toString
       case (key, value: BigInt) => "\"" + escape(key) + "\":" + value.toString
-      case (key, value: (String, Any)) => "\"" + escape(key) + "\":" + hashToJson(Seq(value))
+      case (key, (subKey: String, subValue: Any)) => "\"" + escape(key) + "\":" + hashToJson(Seq((subKey, subValue)))
       case (key, value: Seq[Any]) => "\"" + escape(key) + "\":" + seqToJson(value)
       case (key, value: Any) => "\"" + escape(key) + "\":\"" + escape(value.toString) + "\""
     }.mkString("{", ",", "}")
@@ -159,7 +159,7 @@ object JwtUtils {
       false
     } else {
       var result = 0
-      for (i <- 0 to arr1.length - 1) {
+      for (i <- arr1.indices) {
         result |= arr1(i) ^ arr2(i)
       }
       result == 0

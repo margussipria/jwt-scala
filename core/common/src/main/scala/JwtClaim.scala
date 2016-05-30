@@ -19,7 +19,7 @@ case class JwtClaim(
     "iat" -> issuedAt,
     "jti" -> jwtId
   ).collect {
-    case (key, Some(value)) => (key -> value)
+    case (key, Some(value)) => key -> value
   }), content)
 
   def + (json: String): JwtClaim = this.copy(content = JwtUtils.mergeJson(this.content, json))
@@ -51,6 +51,6 @@ case class JwtClaim(
   def issuedNow: JwtClaim = this.copy(issuedAt = Option(JwtTime.nowSeconds))
 
   def isValid: Boolean = JwtTime.nowIsBetweenSeconds(this.notBefore, this.expiration)
-  def isValid(issuer: String): Boolean = this.issuer.map(_ == issuer).getOrElse(false) && this.isValid
-  def isValid(issuer: String, audience: String): Boolean = this.audience.map(_ == audience).getOrElse(false) && this.isValid(issuer)
+  def isValid(issuer: String): Boolean = this.issuer.contains(issuer) && this.isValid
+  def isValid(issuer: String, audience: String): Boolean = this.audience.contains(audience) && this.isValid(issuer)
 }

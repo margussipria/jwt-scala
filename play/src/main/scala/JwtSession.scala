@@ -38,7 +38,7 @@ case class JwtSession(
 
   /** Remove a sequence of keys from `claimData` */
   def -- (fieldNames: String*): JwtSession = this.copy(claimData = fieldNames.foldLeft(claimData) {
-    (data, fieldName) => (data - fieldName)
+    (data, fieldName) => data - fieldName
   })
 
   /** Retrieve the value corresponding to `fieldName` from `claimData` */
@@ -51,7 +51,7 @@ case class JwtSession(
   /** Alias of `get` */
   def apply(fieldName: String): Option[JsValue] = get(fieldName)
 
-  def isEmpty(): Boolean = claimData.keys.isEmpty
+  def isEmpty: Boolean = claimData.keys.isEmpty
 
   def claim: JwtClaim = jwtClaimReader.reads(claimData).get
   def header: JwtHeader = jwtHeaderReader.reads(headerData).get
@@ -62,7 +62,7 @@ case class JwtSession(
     case _ => JwtJson.encode(headerData, claimData)
   }
 
-  /** Overrride the `claimData` */
+  /** Override the `claimData` */
   def withClaim(claim: JwtClaim): JwtSession = this.copy(claimData = JwtSession.asJsObject(claim))
 
   /** Override the `headerData` */
@@ -84,12 +84,11 @@ object JwtSession {
     getter(key)
   } catch {
     case e: com.typesafe.config.ConfigException.Null => None
-    case e: java.lang.RuntimeException => {
-      e.getCause() match {
+    case e: java.lang.RuntimeException =>
+      e.getCause match {
         case _: com.typesafe.config.ConfigException.Null => None
         case _ => throw e
       }
-    }
   }
 
   val getConfigString = wrap[String](

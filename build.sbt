@@ -8,7 +8,7 @@ import sbt._
 val previousVersion = "0.7.0"
 val buildVersion = "0.7.1"
 
-val projects = Seq("coreCommon", "playJson", "json4sNative", "json4sJackson", "circe", "play")
+val projects = Seq("jwt-core", "jwt-json-common", "jwt-play-json", "jwt-json4s-native", "jwt-json4s-jackson", "jwt-circe", "jwt-play")
 
 addCommandAlias("testAll", projects.map(p => p + "/test").mkString(";", ";", ""))
 
@@ -16,12 +16,12 @@ addCommandAlias("scaladoc", ";coreEdge/doc;playJsonEdge/doc;playEdge/doc;json4sN
 
 addCommandAlias("publish-doc", ";docs/makeSite;docs/ghpagesPushSite")
 
-addCommandAlias("publishCore", ";coreCommonEdge/publishSigned")
-addCommandAlias("publishPlayJson", ";playJsonEdge/publishSigned")
-addCommandAlias("publishJson4Native", ";json4sNativeEdge/publishSigned")
-addCommandAlias("publishJson4Jackson", ";json4sJacksonEdge/publishSigned")
-addCommandAlias("publishCirce", ";circeEdge/publishSigned")
-addCommandAlias("publishPlay", ";playEdge/publishSigned")
+addCommandAlias("publishCore", ";jwt-core/publishSigned")
+addCommandAlias("publishPlayJson", ";jwt-play-json/publishSigned")
+addCommandAlias("publishJson4Native", ";jwt-json4s-native/publishSigned")
+addCommandAlias("publishJson4Jackson", ";jwt-json4s-jackson/publishSigned")
+addCommandAlias("publishCirce", ";jwt-circe/publishSigned")
+addCommandAlias("publishPlay", ";jwt-play/publishSigned")
 
 // Do not cross-build for Play project since Scala 2.10 support was dropped
 addCommandAlias("publishAll", ";publishPlayJson;+publishJson4Native;+publishJson4Jackson;+publishCirce;publishPlay")
@@ -58,7 +58,7 @@ val baseSettings = Seq(
   resolvers ++= Seq(
     "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/"
   ),
-  libraryDependencies ++= Seq(Libs.scalatest, Libs.jmockit),
+  libraryDependencies ++= Seq(Libs.scalatest),
   scalacOptions in (Compile, doc) ++= Seq("-unchecked", "-deprecation"),
   aggregate in test := false,
   fork in test := true,
@@ -117,86 +117,81 @@ val docSettings = Seq(
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.yml" | "*.md" | "*.scss"
 )
 
-lazy val jwtScala = project.in(file("."))
+lazy val jwtScala = Project("jwt-scala", file("."))
   .settings(localSettings)
-  .settings(
-    name := "jwt-scala"
-  )
   .aggregate(play, json4sNative, json4sJackson, circe)
   .dependsOn(play, json4sNative, json4sJackson, circe)
 
-lazy val docs = project.in(file("docs"))
-  .settings(name := "jwt-docs")
-  .settings(localSettings)
-  .settings(site.settings)
-  .settings(ghpages.settings)
-  .settings(tutSettings)
-  .settings(docSettings)
+
+lazy val docs = Project("jwt-docs", file("docs"))
   .settings(
+    localSettings,
+    site.settings,
+    ghpages.settings,
+    tutSettings,
+    docSettings,
     libraryDependencies ++= Seq(Libs.playJson, Libs.play, Libs.playTestProvided, Libs.json4sNative, Libs.circeCore, Libs.circeGeneric, Libs.circeParse)
   )
   .dependsOn(play, json4sNative, circe)
 
 
-lazy val core = project.in(file("core"))
+def module(name: String, dir: String): Project = Project(name, file(dir))
   .settings(releaseSettings)
+
+
+lazy val coreTest = Project("jwt-core-test", file("core-test"))
   .settings(
-    name := "jwt-core",
-    libraryDependencies ++= Seq(Libs.bouncyCastle)
+    localSettings,
+    libraryDependencies ++= Seq(Libs.jmockit)
   )
 
-lazy val jsonCommon = project.in(file("json/common"))
-  .settings(releaseSettings)
+
+lazy val core = module("jwt-core", "core")
   .settings(
-    name := "jwt-json-common"
+    libraryDependencies ++= Seq(Libs.bouncyCastle)
   )
+  .dependsOn(coreTest % "test->compile")
+
+
+lazy val jsonCommon = module("jwt-json-common", "json/common")
   .aggregate(core)
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val circe = project.in(file("json/circe"))
-  .settings(releaseSettings)
+
+lazy val circe = module("jwt-circe", "json/circe")
   .settings(
-    name := "jwt-circe",
     libraryDependencies ++= Seq(Libs.circeCore, Libs.circeGeneric, Libs.circeParse)
   )
   .aggregate(jsonCommon)
   .dependsOn(jsonCommon % "compile->compile;test->test")
 
 
-lazy val json4sCommon = project.in(file("json/json4s-common"))
-  .settings(releaseSettings)
+lazy val json4sCommon = module("jwt-json4s-common", "json/json4s-common")
   .settings(
-    name := "jwt-json4s-common",
     libraryDependencies ++= Seq(Libs.json4sCore)
   )
   .aggregate(jsonCommon)
   .dependsOn(jsonCommon % "compile->compile;test->test")
 
 
-lazy val json4sNative = project.in(file("json/json4s-native"))
-  .settings(releaseSettings)
+lazy val json4sNative = module("jwt-json4s-native", "json/json4s-native")
   .settings(
-    name := "jwt-json4s-native",
     libraryDependencies ++= Seq(Libs.json4sNative)
   )
   .aggregate(json4sCommon)
   .dependsOn(json4sCommon % "compile->compile;test->test")
 
 
-lazy val json4sJackson = project.in(file("json/json4s-jackson"))
-  .settings(releaseSettings)
+lazy val json4sJackson = module("jwt-json4s-jackson", "json/json4s-jackson")
   .settings(
-    name := "jwt-json4s-jackson",
     libraryDependencies ++= Seq(Libs.json4sJackson)
   )
   .aggregate(json4sCommon)
   .dependsOn(json4sCommon % "compile->compile;test->test")
 
 
-lazy val playJson = project.in(file("json/play-json"))
-  .settings(releaseSettings)
+lazy val playJson = module("jwt-play-json", "json/play-json")
   .settings(
-    name := "jwt-play-json",
     libraryDependencies ++= Seq(
       Libs.playJson
     )
@@ -209,10 +204,8 @@ def groupPlayTest(tests: Seq[TestDefinition]) = tests.map { t =>
   new Group(t.name, Seq(t), SubProcess(javaOptions = Seq.empty[String]))
 }
 
-lazy val play = project.in(file("play"))
-  .settings(releaseSettings)
+lazy val play = module("jwt-play", "play")
   .settings(
-    name := "jwt-play",
     libraryDependencies ++= Seq(
       Libs.play,
       Libs.playTest,
@@ -223,10 +216,10 @@ lazy val play = project.in(file("play"))
   .aggregate(playJson)
   .dependsOn(playJson % "compile->compile;test->test")
 
-lazy val examplePlayAngularProject = project.in(file("examples/play-angular"))
+
+lazy val examplePlayAngularProject = module("play-angular-example", "examples/play-angular")
   .settings(localSettings)
   .settings(
-    name := "playAngular",
     routesGenerator := InjectedRoutesGenerator
   )
   .enablePlugins(PlayScala)

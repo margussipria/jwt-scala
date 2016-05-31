@@ -31,6 +31,7 @@ object Dependencies {
 
     val scalatest = "org.scalatest" %% "scalatest" % V.scalatest % Test
     val scalatestPlus = "org.scalatestplus.play" %% "scalatestplus-play" % V.scalatestPlus % Test
-    val jmockit = "org.jmockit" % "jmockit" % V.jmockit % Test
+
+    val jmockit = "org.jmockit" % "jmockit" % V.jmockit
   }
 }

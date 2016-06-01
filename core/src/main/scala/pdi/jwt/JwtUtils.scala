@@ -119,8 +119,7 @@ object JwtUtils {
     mac.doFinal(data)
   }
 
-  def sign(data: String, key: SecretKey, algorithm: JwtHmacAlgorithm): Array[Byte] =
-    sign(bytify(data), key, algorithm)
+  def sign(data: String, key: SecretKey, algorithm: JwtHmacAlgorithm): Array[Byte] = sign(bytify(data), key, algorithm)
 
   /**
     * Generate the signature for a given data using the key and RSA or ECDSA algorithm provided.
@@ -132,8 +131,7 @@ object JwtUtils {
     signer.sign
   }
 
-  def sign(data: String, key: PrivateKey, algorithm: JwtAsymmetricAlgorithm): Array[Byte] =
-    sign(bytify(data), key, algorithm)
+  def sign(data: String, key: PrivateKey, algorithm: JwtAsymmetricAlgorithm): Array[Byte] = sign(bytify(data), key, algorithm)
 
   /**
     * Will try to sign some given data by parsing the provided key, if parsing fail, please consider retrieving the SecretKey or the PrivateKey on your side and then use another "sign" method.
@@ -148,8 +146,7 @@ object JwtUtils {
   /**
     * Alias to `sign` using a String data which will be converted to an array of bytes.
     */
-  def sign(data: String, key: String, algorithm: JwtAlgorithm): Array[Byte] =
-    sign(bytify(data), key, algorithm)
+  def sign(data: String, key: String, algorithm: JwtAlgorithm): Array[Byte] = sign(bytify(data), key, algorithm)
 
   // Fix security vulnerability around timing attacks
   // See http://codahale.com/a-lesson-in-timing-attacks/
@@ -196,6 +193,5 @@ object JwtUtils {
   /**
     * Alias for `verify`
     */
-  def verify(data: String, signature: String, key: String, algorithm: JwtAlgorithm): Boolean =
-    verify(bytify(data), bytify(signature), key, algorithm)
+  def verify(data: String, signature: String, key: String, algorithm: JwtAlgorithm): Boolean = verify(bytify(data), bytify(signature), key, algorithm)
 }

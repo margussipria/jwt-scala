@@ -7,12 +7,12 @@ import scala.util.Success
 
 class JwtSpec extends UnitSpec with Fixture {
   def battleTestEncode(d: DataEntryBase, key: String) = {
-    assertResult(d.tokenEmpty, d.algo.fullName) { Jwt.encode(claim) }
-    assertResult(d.token, d.algo.fullName) { Jwt.encode(d.header, claim, key, d.algo) }
-    assertResult(d.token, d.algo.fullName) { Jwt.encode(claim, key, d.algo) }
-    assertResult(d.tokenEmpty, d.algo.fullName) { Jwt.encode(claimClass) }
-    assertResult(d.token, d.algo.fullName) { Jwt.encode(claimClass, key, d.algo) }
-    assertResult(d.token, d.algo.fullName) { Jwt.encode(d.headerClass, claimClass, key) }
+    assertResult(d.tokenEmpty, d.alg.fullName) { Jwt.encode(claim) }
+    assertResult(d.token, d.alg.fullName) { Jwt.encode(d.header, claim, key, d.alg) }
+    assertResult(d.token, d.alg.fullName) { Jwt.encode(claim, key, d.alg) }
+    assertResult(d.tokenEmpty, d.alg.fullName) { Jwt.encode(claimClass) }
+    assertResult(d.token, d.alg.fullName) { Jwt.encode(claimClass, key, d.alg) }
+    assertResult(d.token, d.alg.fullName) { Jwt.encode(d.headerClass, claimClass, key) }
   }
 
   describe("Jwt") {
@@ -31,31 +31,31 @@ class JwtSpec extends UnitSpec with Fixture {
     it("should be symetric") {
       val mock = mockValidTime
       data foreach { d =>
-        assertResult((d.header, claim, d.signature), d.algo.fullName) {
-          Jwt.decodeAll(Jwt.encode(d.header, claim, secretKey, d.algo), secretKey, JwtAlgorithm.allHmac).get
+        assertResult((d.header, claim, d.signature), d.alg.fullName) {
+          Jwt.decodeAll(Jwt.encode(d.header, claim, secretKey, d.alg), secretKey, JwtAlgorithm.allHmac).get
         }
       }
 
       dataRSA foreach { d =>
         assert({
-          val (h, c, s) = Jwt.decodeAll(Jwt.encode(d.header, claim, randomRSAKey.getPrivate, d.algo.asInstanceOf[JwtRSAAlgorithm]), randomRSAKey.getPublic, JwtAlgorithm.allRSA).get
+          val (h, c, s) = Jwt.decodeAll(Jwt.encode(d.header, claim, randomRSAKey.getPrivate, d.alg.asInstanceOf[JwtRSAAlgorithm]), randomRSAKey.getPublic, JwtAlgorithm.allRSA).get
 
           h == d.header && c == claim
-        }, d.algo.fullName)
+        }, d.alg.fullName)
 
         assert({
-          val (h, c, s) = Jwt.decodeAll(Jwt.encode(d.header, claim, randomRSAKey.getPrivate, d.algo.asInstanceOf[JwtRSAAlgorithm]), randomRSAKey.getPublic).get
+          val (h, c, s) = Jwt.decodeAll(Jwt.encode(d.header, claim, randomRSAKey.getPrivate, d.alg.asInstanceOf[JwtRSAAlgorithm]), randomRSAKey.getPublic).get
 
           h == d.header && c == claim
-        }, d.algo.fullName)
+        }, d.alg.fullName)
       }
 
       dataECDSA foreach { d =>
         assert({
-          val (h, c, s) = Jwt.decodeAll(Jwt.encode(d.header, claim, randomECKey.getPrivate, d.algo.asInstanceOf[JwtECDSAAlgorithm]), randomECKey.getPublic, JwtAlgorithm.allECDSA).get
+          val (h, c, s) = Jwt.decodeAll(Jwt.encode(d.header, claim, randomECKey.getPrivate, d.alg.asInstanceOf[JwtECDSAAlgorithm]), randomECKey.getPublic, JwtAlgorithm.allECDSA).get
 
           h == d.header && c == claim
-        }, d.algo.fullName)
+        }, d.alg.fullName)
       }
 
       mock.tearDown
@@ -64,8 +64,8 @@ class JwtSpec extends UnitSpec with Fixture {
     it("should decodeRawAll") {
       val mock = mockValidTime
       data foreach { d =>
-        assertResult(Success((d.header, claim, d.signature)), d.algo.fullName) { Jwt.decodeRawAll(d.token, secretKey, JwtAlgorithm.allHmac) }
-        assertResult(Success((d.header, claim, d.signature)), d.algo.fullName) { Jwt.decodeRawAll(d.token, secretKeyOf(d.algo)) }
+        assertResult(Success((d.header, claim, d.signature)), d.alg.fullName) { Jwt.decodeRawAll(d.token, secretKey, JwtAlgorithm.allHmac) }
+        assertResult(Success((d.header, claim, d.signature)), d.alg.fullName) { Jwt.decodeRawAll(d.token, secretKeyOf(d.alg)) }
       }
       mock.tearDown
     }
@@ -73,8 +73,8 @@ class JwtSpec extends UnitSpec with Fixture {
     it("should decodeRaw") {
       val mock = mockValidTime
       data foreach { d =>
-        assertResult(Success((claim)), d.algo.fullName) { Jwt.decodeRaw(d.token, secretKey, JwtAlgorithm.allHmac) }
-        assertResult(Success((claim)), d.algo.fullName) { Jwt.decodeRaw(d.token, secretKeyOf(d.algo)) }
+        assertResult(Success((claim)), d.alg.fullName) { Jwt.decodeRaw(d.token, secretKey, JwtAlgorithm.allHmac) }
+        assertResult(Success((claim)), d.alg.fullName) { Jwt.decodeRaw(d.token, secretKeyOf(d.alg)) }
       }
       mock.tearDown
     }
@@ -82,8 +82,8 @@ class JwtSpec extends UnitSpec with Fixture {
     it("should decodeAll") {
       val mock = mockValidTime
       data foreach { d =>
-        assertResult(Success((d.header, claim, d.signature)), d.algo.fullName) { Jwt.decodeAll(d.token, secretKey, JwtAlgorithm.allHmac) }
-        assertResult(Success((d.header, claim, d.signature)), d.algo.fullName) { Jwt.decodeAll(d.token, secretKeyOf(d.algo)) }
+        assertResult(Success((d.header, claim, d.signature)), d.alg.fullName) { Jwt.decodeAll(d.token, secretKey, JwtAlgorithm.allHmac) }
+        assertResult(Success((d.header, claim, d.signature)), d.alg.fullName) { Jwt.decodeAll(d.token, secretKeyOf(d.alg)) }
       }
       mock.tearDown
     }
@@ -91,8 +91,8 @@ class JwtSpec extends UnitSpec with Fixture {
     it("should decode") {
       val mock = mockValidTime
       data foreach { d =>
-        assertResult(Success(claim), d.algo.fullName) { Jwt.decode(d.token, secretKey, JwtAlgorithm.allHmac) }
-        assertResult(Success(claim), d.algo.fullName) { Jwt.decode(d.token, secretKeyOf(d.algo)) }
+        assertResult(Success(claim), d.alg.fullName) { Jwt.decode(d.token, secretKey, JwtAlgorithm.allHmac) }
+        assertResult(Success(claim), d.alg.fullName) { Jwt.decode(d.token, secretKeyOf(d.alg)) }
       }
       mock.tearDown
     }
@@ -101,15 +101,15 @@ class JwtSpec extends UnitSpec with Fixture {
       val mock = mockValidTime
 
       data foreach { d =>
-        assertResult((), d.algo.fullName) { Jwt.validate(d.token, secretKey, JwtAlgorithm.allHmac) }
-        assertResult(true, d.algo.fullName) { Jwt.isValid(d.token, secretKey, JwtAlgorithm.allHmac) }
-        assertResult((), d.algo.fullName) { Jwt.validate(d.token, secretKeyOf(d.algo)) }
-        assertResult(true, d.algo.fullName) { Jwt.isValid(d.token, secretKeyOf(d.algo)) }
+        assertResult((), d.alg.fullName) { Jwt.validate(d.token, secretKey, JwtAlgorithm.allHmac) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(d.token, secretKey, JwtAlgorithm.allHmac) }
+        assertResult((), d.alg.fullName) { Jwt.validate(d.token, secretKeyOf(d.alg)) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(d.token, secretKeyOf(d.alg)) }
       }
 
       dataRSA foreach { d =>
-        assertResult((), d.algo.fullName) { Jwt.validate(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
-        assertResult(true, d.algo.fullName) { Jwt.isValid(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
+        assertResult((), d.alg.fullName) { Jwt.validate(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
       }
 
       mock.tearDown
@@ -138,14 +138,14 @@ class JwtSpec extends UnitSpec with Fixture {
 
       data foreach { d =>
         intercept[JwtExpirationException] { Jwt.validate(d.token, secretKey, JwtAlgorithm.allHmac) }
-        assertResult(false, d.algo.fullName) { Jwt.isValid(d.token, secretKey, JwtAlgorithm.allHmac) }
-        intercept[JwtExpirationException] { Jwt.validate(d.token, secretKeyOf(d.algo)) }
-        assertResult(false, d.algo.fullName) { Jwt.isValid(d.token, secretKeyOf(d.algo)) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(d.token, secretKey, JwtAlgorithm.allHmac) }
+        intercept[JwtExpirationException] { Jwt.validate(d.token, secretKeyOf(d.alg)) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(d.token, secretKeyOf(d.alg)) }
       }
 
       dataRSA foreach { d =>
         intercept[JwtExpirationException] { Jwt.validate(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
-        assertResult(false, d.algo.fullName) { Jwt.isValid(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
       }
 
       mock.tearDown
@@ -157,14 +157,14 @@ class JwtSpec extends UnitSpec with Fixture {
 
       data foreach { d =>
         Jwt.validate(d.token, secretKey, JwtAlgorithm.allHmac, options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(d.token, secretKey, JwtAlgorithm.allHmac, options) }
-        Jwt.validate(d.token, secretKeyOf(d.algo), options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(d.token, secretKeyOf(d.algo), options) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(d.token, secretKey, JwtAlgorithm.allHmac, options) }
+        Jwt.validate(d.token, secretKeyOf(d.alg), options)
+        assertResult(true, d.alg.fullName) { Jwt.isValid(d.token, secretKeyOf(d.alg), options) }
       }
 
       dataRSA foreach { d =>
         Jwt.validate(d.token, publicKeyRSA, JwtAlgorithm.allRSA, options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(d.token, publicKeyRSA, JwtAlgorithm.allRSA, options) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(d.token, publicKeyRSA, JwtAlgorithm.allRSA, options) }
       }
 
       mock.tearDown
@@ -175,20 +175,20 @@ class JwtSpec extends UnitSpec with Fixture {
 
       data foreach { d =>
         val claimNotBefore = claimClass.copy(notBefore = Option(notBefore))
-        val token = Jwt.encode(claimNotBefore, secretKey, d.algo)
+        val token = Jwt.encode(claimNotBefore, secretKey, d.alg)
 
         intercept[JwtNotBeforeException] { Jwt.validate(token, secretKey, JwtAlgorithm.allHmac) }
-        assertResult(false, d.algo.fullName) { Jwt.isValid(token, secretKey, JwtAlgorithm.allHmac) }
-        intercept[JwtNotBeforeException] { Jwt.validate(token, secretKeyOf(d.algo)) }
-        assertResult(false, d.algo.fullName) { Jwt.isValid(token, secretKeyOf(d.algo)) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(token, secretKey, JwtAlgorithm.allHmac) }
+        intercept[JwtNotBeforeException] { Jwt.validate(token, secretKeyOf(d.alg)) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(token, secretKeyOf(d.alg)) }
       }
 
       dataRSA foreach { d =>
         val claimNotBefore = claimClass.copy(notBefore = Option(notBefore))
-        val token = Jwt.encode(claimNotBefore, privateKeyRSA, d.algo)
+        val token = Jwt.encode(claimNotBefore, privateKeyRSA, d.alg)
 
         intercept[JwtNotBeforeException] { Jwt.validate(token, publicKeyRSA, JwtAlgorithm.allRSA) }
-        assertResult(false, d.algo.fullName) { Jwt.isValid(token, publicKeyRSA, JwtAlgorithm.allRSA) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(token, publicKeyRSA, JwtAlgorithm.allRSA) }
       }
 
       mock.tearDown
@@ -200,20 +200,20 @@ class JwtSpec extends UnitSpec with Fixture {
 
       data foreach { d =>
         val claimNotBefore = claimClass.copy(notBefore = Option(notBefore))
-        val token = Jwt.encode(claimNotBefore, secretKey, d.algo)
+        val token = Jwt.encode(claimNotBefore, secretKey, d.alg)
 
         Jwt.validate(token, secretKey, JwtAlgorithm.allHmac, options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(token, secretKey, JwtAlgorithm.allHmac, options) }
-        Jwt.validate(token, secretKeyOf(d.algo), options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(token, secretKeyOf(d.algo), options) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(token, secretKey, JwtAlgorithm.allHmac, options) }
+        Jwt.validate(token, secretKeyOf(d.alg), options)
+        assertResult(true, d.alg.fullName) { Jwt.isValid(token, secretKeyOf(d.alg), options) }
       }
 
       dataRSA foreach { d =>
         val claimNotBefore = claimClass.copy(notBefore = Option(notBefore))
-        val token = Jwt.encode(claimNotBefore, privateKeyRSA, d.algo)
+        val token = Jwt.encode(claimNotBefore, privateKeyRSA, d.alg)
 
         intercept[JwtNotBeforeException] { Jwt.validate(token, publicKeyRSA, JwtAlgorithm.allRSA) }
-        assertResult(false, d.algo.fullName) { Jwt.isValid(token, publicKeyRSA, JwtAlgorithm.allRSA) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(token, publicKeyRSA, JwtAlgorithm.allRSA) }
       }
 
       mock.tearDown
@@ -224,11 +224,11 @@ class JwtSpec extends UnitSpec with Fixture {
 
       data foreach { d =>
         intercept[JwtValidationException] { Jwt.validate(d.token, "wrong key", JwtAlgorithm.allHmac) }
-        assertResult(false, d.algo.fullName) { Jwt.isValid(d.token, "wrong key", JwtAlgorithm.allHmac) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(d.token, "wrong key", JwtAlgorithm.allHmac) }
       }
 
       dataRSA foreach { d =>
-        assertResult(false, d.algo.fullName) { Jwt.isValid(d.token, "wrong key", JwtAlgorithm.allRSA) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(d.token, "wrong key", JwtAlgorithm.allRSA) }
       }
 
       mock.tearDown
@@ -239,17 +239,17 @@ class JwtSpec extends UnitSpec with Fixture {
 
       data foreach { d =>
         intercept[JwtValidationException] { Jwt.validate(d.token, secretKey, Seq.empty[JwtHmacAlgorithm]) }
-        assertResult(false, d.algo.fullName) { Jwt.isValid(d.token, secretKey, Seq.empty[JwtHmacAlgorithm]) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(d.token, secretKey, Seq.empty[JwtHmacAlgorithm]) }
       }
 
       data foreach { d =>
         intercept[JwtValidationException] { Jwt.validate(d.token, secretKey, JwtAlgorithm.allRSA) }
-        assertResult(false, d.algo.fullName) { Jwt.isValid(d.token, secretKey, JwtAlgorithm.allRSA) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(d.token, secretKey, JwtAlgorithm.allRSA) }
       }
 
       dataRSA foreach { d =>
         intercept[JwtValidationException] { Jwt.validate(d.token, publicKeyRSA, JwtAlgorithm.allHmac) }
-        assertResult(false, d.algo.fullName) { Jwt.isValid(d.token, publicKeyRSA, JwtAlgorithm.allHmac) }
+        assertResult(false, d.alg.fullName) { Jwt.isValid(d.token, publicKeyRSA, JwtAlgorithm.allHmac) }
       }
 
       mock.tearDown
@@ -267,14 +267,14 @@ class JwtSpec extends UnitSpec with Fixture {
 
       data foreach { d =>
         Jwt.validate(d.token, secretKey, JwtAlgorithm.allHmac, options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(d.token, secretKey, JwtAlgorithm.allHmac, options) }
-        Jwt.validate(d.token, secretKeyOf(d.algo), options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(d.token, secretKeyOf(d.algo), options) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(d.token, secretKey, JwtAlgorithm.allHmac, options) }
+        Jwt.validate(d.token, secretKeyOf(d.alg), options)
+        assertResult(true, d.alg.fullName) { Jwt.isValid(d.token, secretKeyOf(d.alg), options) }
       }
 
       dataRSA foreach { d =>
         Jwt.validate(d.token, publicKeyRSA, JwtAlgorithm.allRSA, options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(d.token, publicKeyRSA, JwtAlgorithm.allRSA, options) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(d.token, publicKeyRSA, JwtAlgorithm.allRSA, options) }
       }
 
       mock.tearDown
@@ -286,20 +286,20 @@ class JwtSpec extends UnitSpec with Fixture {
 
       data foreach { d =>
         val claimNotBefore = claimClass.copy(notBefore = Option(notBefore))
-        val token = Jwt.encode(claimNotBefore, secretKey, d.algo)
+        val token = Jwt.encode(claimNotBefore, secretKey, d.alg)
 
         Jwt.validate(token, secretKey, JwtAlgorithm.allHmac, options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(token, secretKey, JwtAlgorithm.allHmac, options) }
-        Jwt.validate(token, secretKeyOf(d.algo), options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(token, secretKeyOf(d.algo), options) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(token, secretKey, JwtAlgorithm.allHmac, options) }
+        Jwt.validate(token, secretKeyOf(d.alg), options)
+        assertResult(true, d.alg.fullName) { Jwt.isValid(token, secretKeyOf(d.alg), options) }
       }
 
       dataRSA foreach { d =>
         val claimNotBefore = claimClass.copy(notBefore = Option(notBefore))
-        val token = Jwt.encode(claimNotBefore, privateKeyRSA, d.algo)
+        val token = Jwt.encode(claimNotBefore, privateKeyRSA, d.alg)
 
         Jwt.validate(token, publicKeyRSA, JwtAlgorithm.allRSA, options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(token, publicKeyRSA, JwtAlgorithm.allRSA, options) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(token, publicKeyRSA, JwtAlgorithm.allRSA, options) }
       }
 
       mock.tearDown
@@ -311,11 +311,11 @@ class JwtSpec extends UnitSpec with Fixture {
 
       data foreach { d =>
         Jwt.validate(d.token, "wrong key", JwtAlgorithm.allHmac, options)
-        assertResult(true, d.algo.fullName) { Jwt.isValid(d.token, "wrong key", JwtAlgorithm.allHmac, options) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(d.token, "wrong key", JwtAlgorithm.allHmac, options) }
       }
 
       dataRSA foreach { d =>
-        assertResult(true, d.algo.fullName) { Jwt.isValid(d.token, "wrong key", JwtAlgorithm.allRSA, options) }
+        assertResult(true, d.alg.fullName) { Jwt.isValid(d.token, "wrong key", JwtAlgorithm.allRSA, options) }
       }
 
       mock.tearDown

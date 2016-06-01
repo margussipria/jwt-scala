@@ -3,7 +3,7 @@ package pdi.jwt
 import play.api.libs.json.JsObject
 
 case class JsonDataEntry (
-  algo: JwtAlgorithm,
+  alg: JwtAlgorithm,
   header: String,
   headerClass: JwtHeader,
   header64: String,
@@ -18,7 +18,7 @@ trait JsonFixture extends JsonCommonFixture[JsObject] {
   val headerEmptyJson = jwtHeaderWriter.writes(headerClassEmpty).as[JsObject]
 
   def mapData(data: DataEntryBase): JsonDataEntry = JsonDataEntry(
-    algo = data.algo,
+    alg = data.alg,
     header = data.header,
     headerClass = data.headerClass,
     header64 = data.header64,

@@ -1,3 +1,14 @@
 package pdi.jwt
 
-trait TimeFixture extends TimeFixtureImpl {}
+import java.time.Instant
+
+import mockit.{Mock, MockUp}
+
+trait TimeFixture {
+  def mockTime(now: Long) = {
+    new MockUp[Instant]() {
+      @Mock
+      def toEpochMilli: Long = now
+    }
+  }
+}

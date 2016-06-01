@@ -10,7 +10,7 @@ case class JwtHeader(
     "alg" -> algorithm.map(_.name).orElse(Option("none")),
     "cty" -> contentType
   ).collect {
-    case (key, Some(value)) => (key -> value)
+    case (key, Some(value)) => key -> value
   })
 
   /** Assign the type to the header */
@@ -23,15 +23,15 @@ case class JwtHeader(
 object JwtHeader {
   val DEFAULT_TYPE = "JWT"
 
-  def apply(algorithm: Option[JwtAlgorithm]): JwtHeader = algorithm match {
-    case Some(algo) => JwtHeader(algo)
-    case _ => new JwtHeader(None, None)
+  def apply(algorithm: Option[JwtAlgorithm]): JwtHeader = algorithm.map(JwtHeader.apply).getOrElse {
+    new JwtHeader(None, None)
   }
 
   def apply(algorithm: JwtAlgorithm): JwtHeader = new JwtHeader(Option(algorithm), Option(DEFAULT_TYPE))
 
   def apply(algorithm: JwtAlgorithm, typ: String): JwtHeader = new JwtHeader(Option(algorithm), Option(typ))
 
-  def apply(algorithm: JwtAlgorithm, typ: String, contentType: String): JwtHeader =
+  def apply(algorithm: JwtAlgorithm, typ: String, contentType: String): JwtHeader = {
     new JwtHeader(Option(algorithm), Option(typ), Option(contentType))
+  }
 }

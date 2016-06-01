@@ -28,7 +28,7 @@ trait Json4sCommonFixture extends JsonCommonFixture[JObject] {
   }
 
   def mapData(data: DataEntryBase): JsonDataEntry = JsonDataEntry(
-    algo = data.algo,
+    algo = data.alg,
     header = data.header,
     headerClass = data.headerClass,
     header64 = data.header64,

@@ -1,9 +1,7 @@
 package pdi.jwt
 
 import org.json4s._
-import org.json4s.JsonDSL.WithBigDecimal._
-
-import pdi.jwt.exceptions.{JwtNonStringException, JwtNonNumberException}
+import pdi.jwt.exceptions.{JwtNonNumberException, JwtNonStringException}
 
 trait JwtJson4sCommon extends JwtJsonCommon[JObject] {
   protected def getAlgorithm(header: JObject): Option[JwtAlgorithm] = header \ "alg" match {
@@ -41,14 +39,14 @@ trait JwtJson4sCommon extends JwtJsonCommon[JObject] {
 
   def writeHeader(header: JwtHeader): JValue = parse(header.toJson)
 
-  private def extractString(json: JObject, fieldName: String): Option[String] = (json \ fieldName) match {
+  private def extractString(json: JObject, fieldName: String): Option[String] = json \ fieldName match {
     case JString(value) => Option(value)
     case JNull => None
     case JNothing => None
     case _ => throw new JwtNonStringException(fieldName)
   }
 
-  private def extractLong(json: JObject, fieldName: String): Option[Long] = (json \ fieldName) match {
+  private def extractLong(json: JObject, fieldName: String): Option[Long] = json \ fieldName match {
     case JInt(value) => Option(value.toLong)
     case JNull => None
     case JNothing => None

@@ -8,7 +8,7 @@ import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.spec.ECNamedCurveSpec
 
 trait DataEntryBase {
-  def algo: JwtAlgorithm
+  def alg: JwtAlgorithm
   def header: String
   def headerClass: JwtHeader
   def header64: String
@@ -19,7 +19,7 @@ trait DataEntryBase {
 }
 
 case class DataEntry(
-  algo: JwtAlgorithm,
+  alg: JwtAlgorithm,
   header: String,
   headerClass: JwtHeader,
   header64: String,
@@ -33,7 +33,7 @@ trait Fixture extends TimeFixture {
 
   val secretKey = "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
   val secretKeyBytes = JwtUtils.bytify(secretKey)
-  def secretKeyOf(algo: JwtAlgorithm) = new SecretKeySpec(secretKeyBytes, algo.fullName)
+  def secretKeyOf(alg: JwtAlgorithm) = new SecretKeySpec(secretKeyBytes, alg.fullName)
 
   val expiration: Long = 1300819380
   val expirationMillis: Long = expiration * 1000
@@ -118,7 +118,7 @@ b5VoYLNsdvZhqjVFTrYNEuhTJFYCF7jAiZLYvYm0C99BqcJnJPl7JjWynoNHNKw3
   val Y = BigInt("b7f22b3c1322beef766cadd1a5f0363840195b7be10d9a518802d8d528e03bc164c9588c5e63f1473d05195510676008b6808508539367d2893e1aa4b7cb9f9dab", 16)
 
   val curveParams = ECNamedCurveTable.getParameterSpec("P-521")
-  val curveSpec: ECParameterSpec = new ECNamedCurveSpec( "P-521", curveParams.getCurve(), curveParams.getG(), curveParams.getN(), curveParams.getH());
+  val curveSpec: ECParameterSpec = new ECNamedCurveSpec( "P-521", curveParams.getCurve, curveParams.getG, curveParams.getN, curveParams.getH)
 
   val privateSpec = new ECPrivateKeySpec(S.underlying(), curveSpec)
   val publicSpec = new ECPublicKeySpec(new ECPoint(X.underlying(), Y.underlying()), curveSpec)

@@ -10,9 +10,9 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
   def jwtJsonCommon: JwtJsonCommon[J]
 
   def battleTestEncode(d: JsonDataEntryTrait[J], key: String) = {
-    assertResult(d.token, d.algo.fullName + " key") { jwtJsonCommon.encode(d.headerJson, claimJson, key) }
-    assertResult(d.tokenEmpty, d.algo.fullName + " No header, no key, no algo") { jwtJsonCommon.encode(claimJson) }
-    assertResult(d.token, d.algo.fullName + " No header, key, algo") { jwtJsonCommon.encode(claimJson, key, d.algo) }
+    assertResult(d.token, d.alg.fullName + " key") { jwtJsonCommon.encode(d.headerJson, claimJson, key) }
+    assertResult(d.tokenEmpty, d.alg.fullName + " No header, no key, no algo") { jwtJsonCommon.encode(claimJson) }
+    assertResult(d.token, d.alg.fullName + " No header, key, algo") { jwtJsonCommon.encode(claimJson, key, d.alg) }
   }
 
   describe("JwtJson") {
@@ -33,13 +33,13 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
 
       dataJson foreach { d =>
         val success = Success(d.headerJson, claimJson, d.signature)
-        assertResult(success, d.algo.fullName) { jwtJsonCommon.decodeJsonAll(d.token, secretKey, JwtAlgorithm.allHmac) }
-        assertResult(success, d.algo.fullName) { jwtJsonCommon.decodeJsonAll(d.token, secretKeyOf(d.algo)) }
+        assertResult(success, d.alg.fullName) { jwtJsonCommon.decodeJsonAll(d.token, secretKey, JwtAlgorithm.allHmac) }
+        assertResult(success, d.alg.fullName) { jwtJsonCommon.decodeJsonAll(d.token, secretKeyOf(d.alg)) }
       }
 
       dataRSAJson foreach { d =>
         val success = Success(d.headerJson, claimJson, d.signature)
-        assertResult(success, d.algo.fullName) { jwtJsonCommon.decodeJsonAll(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
+        assertResult(success, d.alg.fullName) { jwtJsonCommon.decodeJsonAll(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
       }
 
       mock.tearDown
@@ -50,12 +50,12 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
       val success = Success(claimJson)
 
       dataJson foreach { d =>
-        assertResult(success, d.algo.fullName) { jwtJsonCommon.decodeJson(d.token, secretKey, JwtAlgorithm.allHmac) }
-        assertResult(success, d.algo.fullName) { jwtJsonCommon.decodeJson(d.token, secretKeyOf(d.algo)) }
+        assertResult(success, d.alg.fullName) { jwtJsonCommon.decodeJson(d.token, secretKey, JwtAlgorithm.allHmac) }
+        assertResult(success, d.alg.fullName) { jwtJsonCommon.decodeJson(d.token, secretKeyOf(d.alg)) }
       }
 
       dataRSAJson foreach { d =>
-        assertResult(success, d.algo.fullName) { jwtJsonCommon.decodeJson(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
+        assertResult(success, d.alg.fullName) { jwtJsonCommon.decodeJson(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
       }
 
       mock.tearDown
@@ -66,13 +66,13 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
 
       dataJson foreach { d =>
         val success = Success(d.headerClass, claimClass, d.signature)
-        assertResult(success, d.algo.fullName) { jwtJsonCommon.decodeAll(d.token, secretKey, JwtAlgorithm.allHmac) }
-        assertResult(success, d.algo.fullName) { jwtJsonCommon.decodeAll(d.token, secretKeyOf(d.algo)) }
+        assertResult(success, d.alg.fullName) { jwtJsonCommon.decodeAll(d.token, secretKey, JwtAlgorithm.allHmac) }
+        assertResult(success, d.alg.fullName) { jwtJsonCommon.decodeAll(d.token, secretKeyOf(d.alg)) }
       }
 
       dataRSAJson foreach { d =>
         val success = Success(d.headerClass, claimClass, d.signature)
-        assertResult(success, d.algo.fullName) { jwtJsonCommon.decodeAll(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
+        assertResult(success, d.alg.fullName) { jwtJsonCommon.decodeAll(d.token, publicKeyRSA, JwtAlgorithm.allRSA) }
       }
 
       mock.tearDown

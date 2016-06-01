@@ -1,9 +1,7 @@
 package pdi.jwt
 
-import org.scalatest._
-
 case class TestObject(value: String) {
-  override def toString(): String = this.value
+  override def toString: String = this.value
 }
 
 class JwtUtilsSpec extends UnitSpec {

@@ -5,7 +5,7 @@ import io.circe.syntax._
 import io.circe.jawn.{parse => jawnParse}
 
 case class JsonDataEntry (
-  algo: JwtAlgorithm,
+  alg: JwtAlgorithm,
   header: String,
   headerClass: JwtHeader,
   header64: String,
@@ -29,7 +29,7 @@ trait CirceFixture extends JsonCommonFixture[Json] {
   }
 
   def mapData(data: DataEntryBase): JsonDataEntry = JsonDataEntry(
-    algo = data.algo,
+    alg = data.alg,
     header = data.header,
     headerClass = data.headerClass,
     header64 = data.header64,

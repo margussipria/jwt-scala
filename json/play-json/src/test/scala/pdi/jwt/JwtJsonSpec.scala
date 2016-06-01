@@ -3,7 +3,7 @@ package pdi.jwt
 import play.api.libs.json.{Json, JsObject}
 
 class JwtJsonSpec extends JwtJsonCommonSpec[JsObject] with JsonFixture {
-  val jwtJsonCommon = JwtJson
+  val jwtJsonCommon = JwtPlayJson
 
   describe("JwtJson") {
     it("should implicitly convert to JsValue") {

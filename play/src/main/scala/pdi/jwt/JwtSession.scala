@@ -58,8 +58,8 @@ case class JwtSession(
 
   /** Encode the session as a JSON Web Token */
   def serialize: String = JwtSession.key match {
-    case Some(k) => JwtJson.encode(headerData, claimData, k)
-    case _ => JwtJson.encode(headerData, claimData)
+    case Some(k) => JwtPlayJson.encode(headerData, claimData, k)
+    case _ => JwtPlayJson.encode(headerData, claimData)
   }
 
   /** Override the `claimData` */
@@ -117,8 +117,8 @@ object JwtSession {
   private def key: Option[String] = getConfigString("play.crypto.secret")
 
   def deserialize(token: String, options: JwtOptions): JwtSession = (key match {
-      case Some(k) => JwtJson.decodeJsonAll(token, k, Seq(ALGORITHM), options)
-      case _ => JwtJson.decodeJsonAll(token, options)
+      case Some(k) => JwtPlayJson.decodeJsonAll(token, k, Seq(ALGORITHM), options)
+      case _ => JwtPlayJson.decodeJsonAll(token, options)
     }).map { tuple =>
       JwtSession(tuple._1, tuple._2, tuple._3)
     }.getOrElse(JwtSession())

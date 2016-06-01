@@ -20,14 +20,14 @@ object JwtCirce extends JwtJsonCommon[Json] {
       else cursor
     }
     JwtClaim(
-        content = contentCursor.top.asJson.noSpaces
-      , issuer = cursor.get[String]("iss").toOption
-      , subject = cursor.get[String]("sub").toOption
-      , audience = cursor.get[String]("aud").toOption
-      , expiration = cursor.get[Long]("exp").toOption
-      , notBefore = cursor.get[Long]("nbf").toOption
-      , issuedAt = cursor.get[Long]("iat").toOption
-      , jwtId = cursor.get[String]("jti").toOption
+      content = contentCursor.top.asJson.noSpaces,
+      issuer = cursor.get[String]("iss").toOption,
+      subject = cursor.get[String]("sub").toOption,
+      audience = cursor.get[String]("aud").toOption,
+      expiration = cursor.get[Long]("exp").toOption,
+      notBefore = cursor.get[Long]("nbf").toOption,
+      issuedAt = cursor.get[Long]("iat").toOption,
+      jwtId = cursor.get[String]("jti").toOption
     )
   }
 
@@ -45,12 +45,11 @@ object JwtCirce extends JwtJsonCommon[Json] {
   protected def parseHeader(header: String): JwtHeader = {
     val cursor = parse(header).hcursor
     JwtHeader(
-        algorithm = getAlg(cursor)
-      , typ = cursor.get[String]("typ").toOption
-      , contentType = cursor.get[String]("cty").toOption
+      algorithm = getAlg(cursor),
+      typ = cursor.get[String]("typ").toOption,
+      contentType = cursor.get[String]("cty").toOption
     )
   }
 
   protected def getAlgorithm(header: Json): Option[JwtAlgorithm] = getAlg(header.hcursor)
-
 }

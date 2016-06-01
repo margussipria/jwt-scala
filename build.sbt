@@ -10,9 +10,9 @@ val buildVersion = "0.7.1"
 
 val projects = Seq("jwt-core", "jwt-json-common", "jwt-play-json", "jwt-json4s-native", "jwt-json4s-jackson", "jwt-circe", "jwt-play")
 
-addCommandAlias("testAll", projects.map(p => p + "/test").mkString(";", ";", ""))
+addCommandAlias("testAll", ";" + projects.map(p => p + "/test").mkString(";"))
 
-addCommandAlias("scaladoc", ";coreEdge/doc;playJsonEdge/doc;playEdge/doc;json4sNativeEdge/doc;circeEdge/doc;scaladocScript;cleanScript")
+addCommandAlias("scaladoc", ";" + projects.map(p => p + "/doc").mkString(";") + ";scaladocScript;cleanScript")
 
 addCommandAlias("publish-doc", ";docs/makeSite;docs/ghpagesPushSite")
 
@@ -58,7 +58,7 @@ val baseSettings = Seq(
   resolvers ++= Seq(
     "Typesafe repository releases" at "http://repo.typesafe.com/typesafe/releases/"
   ),
-  libraryDependencies ++= Seq(Libs.scalatest),
+  libraryDependencies ++= Seq(Libs.scalatest, Libs.jmockit),
   scalacOptions in (Compile, doc) ++= Seq("-unchecked", "-deprecation"),
   aggregate in test := false,
   fork in test := true,
@@ -139,18 +139,10 @@ def module(name: String, dir: String): Project = Project(name, file(dir))
   .settings(releaseSettings)
 
 
-lazy val coreTest = Project("jwt-core-test", file("core-test"))
-  .settings(
-    localSettings,
-    libraryDependencies ++= Seq(Libs.jmockit)
-  )
-
-
 lazy val core = module("jwt-core", "core")
   .settings(
     libraryDependencies ++= Seq(Libs.bouncyCastle)
   )
-  .dependsOn(coreTest % "test->compile")
 
 
 lazy val jsonCommon = module("jwt-json-common", "json/common")

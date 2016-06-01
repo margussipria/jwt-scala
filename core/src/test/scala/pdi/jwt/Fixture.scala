@@ -1,10 +1,11 @@
 package pdi.jwt
 
-import java.security.spec.{ECPrivateKeySpec, ECPublicKeySpec, ECGenParameterSpec, ECParameterSpec, ECPoint}
-import java.security.{SecureRandom, KeyFactory, KeyPairGenerator}
+import java.security.spec._
+import java.security.{KeyFactory, KeyPairGenerator, SecureRandom}
+import javax.crypto.spec.SecretKeySpec
+
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.spec.ECNamedCurveSpec
-import javax.crypto.spec.SecretKeySpec
 
 trait DataEntryBase {
   def algo: JwtAlgorithm
@@ -29,6 +30,7 @@ case class DataEntry(
 ) extends DataEntryBase
 
 trait Fixture extends TimeFixture {
+
   val secretKey = "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
   val secretKeyBytes = JwtUtils.bytify(secretKey)
   def secretKeyOf(algo: JwtAlgorithm) = new SecretKeySpec(secretKeyBytes, algo.fullName)
@@ -53,7 +55,7 @@ trait Fixture extends TimeFixture {
   val validTimeMillis: Long = validTime * 1000
   def mockValidTime = mockTime(validTimeMillis)
 
-  val claim = s"""{"iss":"joe","exp":${expiration},"http://example.com/is_root":true}"""
+  val claim = s"""{"iss":"joe","exp":$expiration,"http://example.com/is_root":true}"""
   val claimClass = JwtClaim("""{"http://example.com/is_root":true}""", issuer = Option("joe"), expiration = Option(expiration))
   val claim64 = "eyJpc3MiOiJqb2UiLCJleHAiOjEzMDA4MTkzODAsImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"
 

@@ -1,11 +1,10 @@
 package pdi.jwt
 
-import org.json4s._
 import org.json4s.JsonDSL._
-import org.json4s.native.JsonMethods._
+import org.json4s._
 
-class JwtJson4sNativeSpec extends JwtJsonCommonSpec[JObject] with Json4sNativeFixture {
-  val jwtJsonCommon = JwtJson4s
+class JwtJson4sNativeSpec extends JwtJsonCommonSpec[JObject] with JwtJson4sNativeFixture {
+  val jwtJsonCommon = JwtJson4sNative
 
   describe("JwtJson") {
     it("should implicitly convert to JValue") {

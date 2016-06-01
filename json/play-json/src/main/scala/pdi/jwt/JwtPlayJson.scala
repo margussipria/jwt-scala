@@ -8,7 +8,7 @@ import play.api.libs.json._
   *
   * To see a full list of samples, check the [[http://pauldijou.fr/jwt-scala/samples/jwt-play-json/ online documentation]].
   */
-object JwtJson extends JwtJsonCommon[JsObject] {
+object JwtPlayJson extends JwtJsonCommon[JsObject] {
   protected def parse(value: String): JsObject = Json.parse(value).as[JsObject]
 
   protected def stringify(value: JsObject): String = Json.stringify(value)

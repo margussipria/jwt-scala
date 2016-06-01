@@ -24,14 +24,16 @@ case class JwtClaim(
 
   def + (json: String): JwtClaim = this.copy(content = JwtUtils.mergeJson(this.content, json))
 
-  def + (key: String, value: Any): JwtClaim =
+  def + (key: String, value: Any): JwtClaim = {
     this.copy(content = JwtUtils.mergeJson(this.content, JwtUtils.hashToJson(Seq(key -> value))))
+  }
 
   // Ok, it's Any, but just use "primitive" types
   // It will not work with classes or case classes since, you know,
   // there is no way to serialize them to JSON out of the box.
-  def ++ (fields: (String, Any)*): JwtClaim =
+  def ++ (fields: (String, Any)*): JwtClaim = {
     this.copy(content = JwtUtils.mergeJson(this.content, JwtUtils.hashToJson(fields)))
+  }
 
   def by(issuer: String): JwtClaim = this.copy(issuer = Option(issuer))
   def to(audience: String): JwtClaim = this.copy(audience = Option(audience))

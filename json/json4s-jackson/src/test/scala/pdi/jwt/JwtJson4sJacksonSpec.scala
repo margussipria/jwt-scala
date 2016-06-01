@@ -1,11 +1,10 @@
 package pdi.jwt
 
-import org.json4s._
 import org.json4s.JsonDSL._
-import org.json4s.jackson.JsonMethods._
+import org.json4s._
 
 class JwtJson4sJacksonSpec extends JwtJsonCommonSpec[JObject] with Json4sJacksonFixture {
-  val jwtJsonCommon = JwtJson4s
+  val jwtJsonCommon = JwtJson4sJackson
 
   describe("JwtJson") {
     it("should implicitly convert to JValue") {

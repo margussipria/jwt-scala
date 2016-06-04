@@ -8,7 +8,7 @@ import eu.sipria.jwt.exceptions._
 
 import scala.util.Try
 
-case class JwtToken(header: JwtHeader, claim: JwtClaim, data: String, signature: String) {
+case class JwtToken[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], data: String, signature: String)(implicit jwtJson: JwtCore[JsonType]) {
 
   lazy val token: String = data + "." + signature
 
@@ -103,7 +103,7 @@ object JwtToken {
     * @param token token
     * @return JwtToken that can be validated
     */
-  def apply[JsonType](token: String)(implicit jwtJson: JwtCore[JsonType]): JwtToken = {
+  def apply[JsonType](token: String)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
     val (header64, header, claim64, claim, signature) = splitToken(token)
     val data = header64 + "." + claim64
     JwtToken(jwtJson.parseHeader(header), jwtJson.parseClaim(claim), data, signature)
@@ -113,7 +113,7 @@ object JwtToken {
     "The key type doesn't match the algorithm type. It's either a SecretKey and a HMAC algorithm or a PrivateKey and a RSA or ECDSA algorithm. And an algorithm is required of course."
   )
 
-  def apply[JsonType](header: JsonType, claim: JsonType)(implicit jwtJson: JwtCore[JsonType]): JwtToken = {
+  def apply[JsonType](header: JsonType, claim: JsonType)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
 
     val data = JwtBase64.encodeString(jwtJson.stringify(header)) + "." + JwtBase64.encodeString(jwtJson.stringify(claim))
 
@@ -133,12 +133,12 @@ object JwtToken {
     * @param header the header to stringify as a JSON before encoding the token
     * @param claim the claim to stringify as a JSON before encoding the token
     */
-  def apply[JsonType](header: JwtHeader, claim: JwtClaim)(implicit jwtJson: JwtCore[JsonType]): JwtToken = header.alg match {
+  def apply[JsonType](header: JwtHeader, claim: JwtClaim[JsonType])(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = header.alg match {
     case None => apply(jwtJson.getJson(header), jwtJson.getJson(claim))
     case _ => throw new JwtNonEmptyAlgorithmException()
   }
 
-  def apply[JsonType](header: JsonType, claim: JsonType, key: Key)(implicit jwtJson: JwtCore[JsonType]): JwtToken = {
+  def apply[JsonType](header: JsonType, claim: JsonType, key: Key)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
 
     val data = JwtBase64.encodeString(jwtJson.stringify(header)) + "." + JwtBase64.encodeString(jwtJson.stringify(claim))
 
@@ -163,7 +163,7 @@ object JwtToken {
     * @param key key
     * @param algorithm algorithm
     */
-  def apply[JsonType](claim: JwtClaim, key: Key, algorithm: JwtAlgorithm)(implicit jwtJson: JwtCore[JsonType]): JwtToken = {
+  def apply[JsonType](claim: JwtClaim[JsonType], key: Key, algorithm: JwtAlgorithm)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
     apply(jwtJson.getJson(JwtHeader(algorithm)), jwtJson.getJson(claim), key)
   }
 
@@ -174,7 +174,7 @@ object JwtToken {
     * @param claim the claim to stringify as a JSON before encoding the token
     * @param key the secret key to use to sign the token (note that the algorithm will be deduced from the header)
     */
-  def apply[JsonType](header: JwtHeader, claim: JwtClaim, key: Key)(implicit jwtJson: JwtCore[JsonType]): JwtToken = {
+  def apply[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], key: Key)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
     apply(jwtJson.getJson(header), jwtJson.getJson(claim), key)
   }
 }

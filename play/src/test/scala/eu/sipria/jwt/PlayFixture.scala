@@ -20,6 +20,8 @@ trait PlayFixture extends Fixture {
 
   implicit def jwtTime: JwtTime
 
+  def claimClass: JwtClaim[JsObject] = claimClassString.copy(content = JwtPlayJson.parse(claimClassString.content))
+
   val user = User(1, "Paul")
   val userJson = Json.obj("id" -> 1, "name" -> "Paul")
 

@@ -17,7 +17,7 @@ class JwtJsonSpec extends JwtJsonCommonSpec[JsObject] with JsonFixture {
         "nbf" -> 10,
         "iat" -> 10
       ), "Claim") {
-        JwtClaim().by("me").to("you").about("something").issuedAt(10).startsAt(10).expiresAt(15).toJsValue
+        JwtClaim(content = JsObject.apply(Seq.empty)).by("me").to("you").about("something").issuedAt(10).startsAt(10).expiresAt(15).toJsValue
       }
 
       assertResult(Json.obj(

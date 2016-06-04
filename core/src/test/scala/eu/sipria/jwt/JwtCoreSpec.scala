@@ -19,7 +19,7 @@ class JwtCoreSpec extends UnitSpec with Fixture {
 
     override def parseHeader(header: String): JwtHeader = ???
 
-    override def parseClaim(claim: String): JwtClaim = ???
+    override def parseClaim(claim: String): JwtClaim[String] = ???
   }
 
   describe("JwtCore") {
@@ -28,7 +28,7 @@ class JwtCoreSpec extends UnitSpec with Fixture {
 
       data foreach { d =>
         assertResult(true, d.alg.fullName) {
-          val token = JwtToken(d.headerClass, claimClass, d.header64 + "." + claim64, d.signature)
+          val token = JwtToken(d.headerClass, claimClassString, d.header64 + "." + claim64, d.signature)
 
           token.isValid(JwtUtils.getVerifyKeyFromBase64(secretKeyBase64, d.alg), JwtAlgorithm.allHmac)
         }
@@ -36,7 +36,7 @@ class JwtCoreSpec extends UnitSpec with Fixture {
 
       dataRSA foreach { d =>
         assertResult(true, d.alg.fullName) {
-          val token = JwtToken(d.headerClass, claimClass, d.header64 + "." + claim64, d.signature)
+          val token = JwtToken(d.headerClass, claimClassString, d.header64 + "." + claim64, d.signature)
 
           token.isValid(JwtUtils.getVerifyKeyFromBase64(publicKeyRSA, d.alg), JwtAlgorithm.allRSA)
         }

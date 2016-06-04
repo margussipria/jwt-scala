@@ -53,7 +53,7 @@ case class JwtSession(headerData: JsObject, claimData: JsObject) {
 
   def isEmpty: Boolean = claimData.keys.isEmpty
 
-  def claim: JwtClaim = jwtClaimReader.reads(claimData).get
+  def claim: JwtClaim[JsObject] = jwtClaimReader.reads(claimData).get
   def header: JwtHeader = jwtHeaderReader.reads(headerData).get
 
   /** Encode the session as a JSON Web Token */
@@ -65,7 +65,7 @@ case class JwtSession(headerData: JsObject, claimData: JsObject) {
   }
 
   /** Override the `claimData` */
-  def withClaim(claim: JwtClaim): JwtSession = this.copy(claimData = JwtSession.asJsObject(claim))
+  def withClaim(claim: JwtClaim[JsObject]): JwtSession = this.copy(claimData = JwtSession.asJsObject(claim))
 
   /** Override the `headerData` */
   def withHeader(header: JwtHeader): JwtSession = this.copy(headerData = JwtSession.asJsObject(header))
@@ -138,9 +138,9 @@ object JwtSession {
 
   def defaultHeader: JwtHeader = key.map(_ => JwtHeader(ALGORITHM)).getOrElse(JwtHeader())
 
-  def defaultClaim(implicit jwtTime: JwtTime): JwtClaim = MAX_AGE match {
-    case Some(seconds) => JwtClaim().expiresIn(seconds)
-    case _ => JwtClaim()
+  def defaultClaim(implicit jwtTime: JwtTime): JwtClaim[JsObject] = MAX_AGE match {
+    case Some(seconds) => JwtClaim(content = JsObject.apply(Seq.empty)).expiresIn(seconds)
+    case _ => JwtClaim(content = JsObject.apply(Seq.empty))
   }
 
   def apply(jsClaim: JsObject): JwtSession =
@@ -154,7 +154,7 @@ object JwtSession {
     }
   }
 
-  def apply(claim: JwtClaim): JwtSession = JwtSession.apply(defaultHeader, claim)
+  def apply(claim: JwtClaim[JsObject]): JwtSession = JwtSession.apply(defaultHeader, claim)
 
-  def apply(header: JwtHeader, claim: JwtClaim): JwtSession = new JwtSession(asJsObject(header), asJsObject(claim))
+  def apply(header: JwtHeader, claim: JwtClaim[JsObject]): JwtSession = new JwtSession(asJsObject(header), asJsObject(claim))
 }

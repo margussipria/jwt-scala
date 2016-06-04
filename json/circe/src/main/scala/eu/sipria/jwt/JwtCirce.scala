@@ -32,7 +32,7 @@ object JwtCirce extends JwtCore[Json] {
       header.cty
         .map(Json.fromString).map("cty" -> _)
     ).flatten)
-    case claim: JwtClaim =>
+    case claim: JwtClaim[Json] =>
       val value = Json.fromFields(Seq(
         claim.iss.map(Json.fromString).map("iss" -> _),
         claim.sub.map(Json.fromString).map("sub" -> _),
@@ -43,7 +43,7 @@ object JwtCirce extends JwtCore[Json] {
         claim.jti.map(Json.fromString).map("jti" -> _)
       ).flatten)
 
-      parse(claim.content).deepMerge(value)
+      claim.content.deepMerge(value)
   }
 
   def parseHeader(header: Json): JwtHeader = {
@@ -55,7 +55,7 @@ object JwtCirce extends JwtCore[Json] {
     )
   }
 
-  def parseClaim(claim: Json): JwtClaim = {
+  def parseClaim(claim: Json): JwtClaim[Json] = {
     val cursor = claim.hcursor
     val contentCursor = List("iss", "sub", "aud", "exp", "nbf", "iat", "jti").foldLeft(cursor) { (cursor, field) =>
       val newCursor = cursor.downField(field).delete
@@ -63,7 +63,7 @@ object JwtCirce extends JwtCore[Json] {
       else cursor
     }
     JwtClaim(
-      content = contentCursor.top.asJson.noSpaces,
+      content = contentCursor.top.asJson,
       iss = cursor.get[String]("iss").toOption,
       sub = cursor.get[String]("sub").toOption,
       aud = cursor.get[String]("aud").toOption,
@@ -75,5 +75,5 @@ object JwtCirce extends JwtCore[Json] {
   }
 
   def parseHeader(header: String): JwtHeader = parseHeader(parse(header))
-  def parseClaim(claim: String): JwtClaim = parseClaim(parse(claim))
+  def parseClaim(claim: String): JwtClaim[Json] = parseClaim(parse(claim))
 }

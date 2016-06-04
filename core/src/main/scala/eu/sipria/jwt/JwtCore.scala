@@ -10,8 +10,8 @@ trait JwtCore[JsonType] {
   def getJson(jwtJson: JwtJson): JsonType
 
   def parseHeader(header: JsonType): JwtHeader
-  def parseClaim(claim: JsonType): JwtClaim
+  def parseClaim(claim: JsonType): JwtClaim[JsonType]
 
   def parseHeader(header: String): JwtHeader
-  def parseClaim(claim: String): JwtClaim
+  def parseClaim(claim: String): JwtClaim[JsonType]
 }

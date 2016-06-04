@@ -62,7 +62,7 @@ trait Fixture {
   def mockValidTime = mockTime(validTime)
 
   val claim = s"""{"iss":"joe","exp":$expiration,"http://example.com/is_root":true}"""
-  val claimClass = JwtClaim("""{"http://example.com/is_root":true}""", iss = Option("joe"), exp = Option(expiration))
+  val claimClassString = JwtClaim("""{"http://example.com/is_root":true}""", iss = Option("joe"), exp = Option(expiration))
   val claim64 = "eyJpc3MiOiJqb2UiLCJleHAiOjEzMDA4MTkzODAsImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"
 
   val headerEmpty = """{"alg":"none"}"""

@@ -8,7 +8,7 @@ trait JwtJson4sImplicits {
     def toJValue: JValue = JwtJson4sJackson.writeHeader(header)
   }
 
-  implicit class RichJwtClaim(claim: JwtClaim) extends eu.sipria.jwt.claim.RicJwtClaim(claim) {
+  implicit class RichJwtClaim(claim: JwtClaim[JValue]) extends eu.sipria.jwt.claim.RicJwtClaim(claim) {
     def toJValue: JValue = JwtJson4sJackson.writeClaim(claim)
   }
 }

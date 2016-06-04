@@ -15,12 +15,12 @@ object JwtPlayJson extends JwtCore[JsObject] {
 
   def getJson(jwtJson: JwtJson): JsObject = jwtJson match {
     case jwtJson: JwtHeader => jwtHeaderWriter.writes(jwtJson)
-    case jwtJson: JwtClaim => jwtClaimWriter.writes(jwtJson)
+    case jwtJson: JwtClaim[JsObject] => jwtClaimWriter.writes(jwtJson)
   }
 
   def parseHeader(header: JsObject): JwtHeader = jwtHeaderReader.reads(header).get
-  def parseClaim(claim: JsObject): JwtClaim = jwtClaimReader.reads(claim).get
+  def parseClaim(claim: JsObject): JwtClaim[JsObject] = jwtClaimReader.reads(claim).get
 
   def parseHeader(header: String): JwtHeader = parseHeader(Json.parse(header).asInstanceOf[JsObject])
-  def parseClaim(claim: String): JwtClaim = parseClaim(Json.parse(claim).asInstanceOf[JsObject])
+  def parseClaim(claim: String): JwtClaim[JsObject] = parseClaim(Json.parse(claim).asInstanceOf[JsObject])
 }

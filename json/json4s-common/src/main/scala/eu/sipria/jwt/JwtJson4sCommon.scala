@@ -15,7 +15,7 @@ trait JwtJson4sCommon extends JwtCore[JValue] {
     case _ => throw new JwtNonStringException("alg")
   }
 
-  def readClaim(json: JValue): JwtClaim = json match {
+  def readClaim(json: JValue): JwtClaim[JValue] = json match {
     case value: JObject => JwtClaim.apply(
       iss = extractString(value, "iss"),
       sub = extractString(value, "sub"),
@@ -24,12 +24,12 @@ trait JwtJson4sCommon extends JwtCore[JValue] {
       nbf = extractLong(value, "nbf"),
       iat = extractLong(value, "iat"),
       jti = extractString(value, "jti"),
-      content = stringify(filterClaimFields(value))
+      content = filterClaimFields(value)
     )
     case _ => throw new RuntimeException("Expected a JObject")
   }
 
-  def writeClaim(claim: JwtClaim): JValue = {
+  def writeClaim(claim: JwtClaim[JValue]): JValue = {
     val value = {
       ("iss" -> claim.iss) ~
       ("sub" -> claim.sub) ~
@@ -43,7 +43,7 @@ trait JwtJson4sCommon extends JwtCore[JValue] {
       case (_, _) => false
     }
 
-    value.merge(parse(claim.content))
+    value.merge(claim.content)
   }
 
   def readHeader(json: JValue): JwtHeader = json match {
@@ -97,12 +97,12 @@ trait JwtJson4sCommon extends JwtCore[JValue] {
 
   def getJson(jwtJson: JwtJson): JValue = jwtJson match {
     case header: JwtHeader => writeHeader(header)
-    case claim: JwtClaim => writeClaim(claim)
+    case claim: JwtClaim[JValue] => writeClaim(claim)
   }
 
   def parseHeader(header: JValue): JwtHeader = readHeader(header)
-  def parseClaim(claim: JValue): JwtClaim = readClaim(claim)
+  def parseClaim(claim: JValue): JwtClaim[JValue] = readClaim(claim)
 
   def parseHeader(header: String): JwtHeader = readHeader(parse(header))
-  def parseClaim(claim: String): JwtClaim = readClaim(parse(claim))
+  def parseClaim(claim: String): JwtClaim[JValue] = readClaim(parse(claim))
 }

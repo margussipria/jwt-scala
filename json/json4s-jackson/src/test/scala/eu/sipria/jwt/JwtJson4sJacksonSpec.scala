@@ -17,7 +17,7 @@ class JwtJson4sJacksonSpec extends JwtJsonCommonSpec[JValue] with Json4sJacksonF
         ("nbf" -> 10) ~
         ("iat" -> 10)
       ), "Claim") {
-        JwtClaim().by("me").to("you").about("something").issuedAt(10).startsAt(10).expiresAt(15).toJValue
+        JwtClaim(content = JObject.apply().asInstanceOf[JValue]).by("me").to("you").about("something").issuedAt(10).startsAt(10).expiresAt(15).toJValue
       }
 
       assertResult((

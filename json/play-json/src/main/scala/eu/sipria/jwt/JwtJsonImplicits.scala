@@ -49,13 +49,13 @@ trait JwtJsonImplicits {
     }
   }
 
-  implicit val jwtClaimReader = new Reads[JwtClaim] {
-    def reads(json: JsValue): JsResult[JwtClaim] = json match {
+  implicit val jwtClaimReader = new Reads[JwtClaim[JsObject]] {
+    def reads(json: JsValue): JsResult[JwtClaim[JsObject]] = json match {
       case value: JsObject =>
         try {
           JsSuccess(
             JwtClaim.apply(
-              content = Json.stringify(value - "iss" - "sub" - "aud" - "exp" - "nbf" - "iat" - "jti"),
+              content = value - "iss" - "sub" - "aud" - "exp" - "nbf" - "iat" - "jti",
               iss = extractString(value, "iss"),
               sub = extractString(value, "sub"),
               aud = extractString(value, "aud"),
@@ -73,8 +73,8 @@ trait JwtJsonImplicits {
     }
   }
 
-  implicit val jwtClaimWriter = new Writes[JwtClaim] {
-    def writes(claim: JwtClaim): JsObject = {
+  implicit val jwtClaimWriter = new Writes[JwtClaim[JsObject]] {
+    def writes(claim: JwtClaim[JsObject]): JsObject = {
       val value = JsObject(Seq(
         claim.iss.map(JsString).map("iss" -> _),
         claim.sub.map(JsString).map("sub" -> _),
@@ -85,7 +85,7 @@ trait JwtJsonImplicits {
         claim.jti.map(JsString).map("jti" -> _)
       ).flatten)
 
-      value ++ Json.parse(claim.content).asInstanceOf[JsObject]
+      value ++ claim.content.asInstanceOf[JsObject]
     }
   }
 
@@ -93,7 +93,7 @@ trait JwtJsonImplicits {
     def toJsValue: JsValue = jwtHeaderWriter.writes(header)
   }
 
-  implicit class RichJwtClaim(claim: JwtClaim) extends eu.sipria.jwt.claim.RicJwtClaim(claim) {
+  implicit class RichJwtClaim(claim: JwtClaim[JsObject]) extends eu.sipria.jwt.claim.RicJwtClaim(claim) {
     def toJsValue: JsValue = jwtClaimWriter.writes(claim)
   }
 }

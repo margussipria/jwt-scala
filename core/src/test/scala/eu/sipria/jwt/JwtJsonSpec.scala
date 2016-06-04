@@ -7,7 +7,8 @@ class JwtJsonSpec extends UnitSpec {
   describe("JwtJson") {
     it("should implicitly construct claim") {
 
-      assertResult(JwtClaim(
+      assertResult(JwtClaim[String](
+        content = "{}",
         iss = Some("me"),
         aud = Some("you"),
         sub = Some("something"),
@@ -15,7 +16,7 @@ class JwtJsonSpec extends UnitSpec {
         nbf = Some(10),
         iat = Some(10)
       ), "Claim") {
-        JwtClaim().by("me").to("you").about("something").issuedAt(10).startsAt(10).expiresAt(15)
+        JwtClaim[String](content = "{}").by("me").to("you").about("something").issuedAt(10).startsAt(10).expiresAt(15)
       }
     }
   }

@@ -1,7 +1,7 @@
 package eu.sipria.jwt
 
-case class JwtClaim(
-  content: String = "{}",
+case class JwtClaim[JsonType](
+  content: JsonType,
   // issuer
   iss: Option[String] = None,
   // subject

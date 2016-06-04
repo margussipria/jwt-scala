@@ -11,13 +11,12 @@ import scala.util.Try
 /** Similar to the default Play Session but using JsObject instead of Map[String, String]. The data is separated into two attributes:
   * `headerData` and `claimData`. There is also a optional signature. Most of the time, you should only care about the `claimData` which
   * stores the claim of the token containing the custom values you eventually put in it. That's why all methods of `JwtSession` (such as
-  * add and removing values) only modifiy the `claimData`.
+  * add and removing values) only modify the `claimData`.
   *
   * To see a full list of samples, check the [[http://pauldijou.fr/jwt-scala/samples/jwt-play/ online documentation]].
   *
   * '''Warning''' Be aware that if you override the `claimData` (using `withClaim` for example), you might override some attributes that
   * were automatically put inside the claim such as the expiration of the token.
-  *
   */
 case class JwtSession(headerData: JsObject, claimData: JsObject) {
   /** Merge the `value` with `claimData` */

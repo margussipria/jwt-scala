@@ -18,7 +18,7 @@ trait JwtPlayImplicits {
     request.headers.get(JwtSession.HEADER_NAME).map(sanitizeHeader).map(JwtSession.deserialize).getOrElse(JwtSession())
   }
 
-  /** By adding `import eu.sipria.jwt._`, you will implicitly add all those methods to `Result` allowing you to easily manipulate
+  /** By adding `import eu.sipria.play.jwt._`, you will implicitly add all those methods to `Result` allowing you to easily manipulate
     * the [[JwtSession]] inside your Play application.
     *
     * {{{
@@ -60,7 +60,8 @@ trait JwtPlayImplicits {
 
     /** Override the current [[JwtSession]] with a new one */
     def withJwtSession(session: JwtSession): Result = {
-      result.withHeaders(JwtSession.HEADER_NAME -> (JwtSession.TOKEN_PREFIX + " " + session.serialize))
+      val tokenPrefix = if (JwtSession.TOKEN_PREFIX.nonEmpty) { JwtSession.TOKEN_PREFIX +  " "  } else { "" }
+      result.withHeaders(JwtSession.HEADER_NAME -> (tokenPrefix + session.serialize))
     }
     /** Override the current [[JwtSession]] with a new one created from a JsObject */
     def withJwtSession(session: JsObject): Result = withJwtSession(JwtSession(session))
@@ -90,7 +91,7 @@ trait JwtPlayImplicits {
     }
   }
 
-  /** By adding `import eu.sipria.jwt._`, you will implicitly add this method to `RequestHeader` allowing you to easily retrieve
+  /** By adding `import eu.sipria.play.jwt._`, you will implicitly add this method to `RequestHeader` allowing you to easily retrieve
     * the [[JwtSession]] inside your Play application.
     *
     * {{{

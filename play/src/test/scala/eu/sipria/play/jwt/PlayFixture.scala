@@ -67,5 +67,5 @@ trait PlayFixture extends Fixture {
     call(action, FakeRequest(POST, "/something").withJsonBody(body))
   }
 
-  def jwtHeader(of: Future[Result])(implicit timeout: Timeout): Option[String] = header(JwtSession.HEADER_NAME, of)(timeout).map(_.trim)
+  def jwtHeader(of: Future[Result])(implicit timeout: Timeout): Option[String] = header(JwtSession.HEADER_NAME, of)(timeout)
 }

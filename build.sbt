@@ -9,7 +9,7 @@ val previousVersion = "0.7.0"
 val buildVersion = "0.7.1"
 
 val baseSettings = Seq(
-  organization := "com.pauldijou",
+  organization := "eu.sipria.jwt",
   version := buildVersion,
   scalaVersion := "2.11.8",
   //crossScalaVersions := Seq("2.10.6", "2.11.8"),
@@ -104,25 +104,19 @@ lazy val json4sJackson = module("jwt-json4s-jackson", "json/json4s-jackson")
 
 lazy val playJson = module("jwt-play-json", "json/play-json")
   .settings(
-    libraryDependencies ++= Seq(
-      Libs.playJson
-    )
+    libraryDependencies ++= Seq(Libs.playJson)
   )
   .aggregate(core)
   .dependsOn(core % "compile->compile;test->test")
 
 
 def groupPlayTest(tests: Seq[TestDefinition]) = tests.map { t =>
-  new Group(t.name, Seq(t), SubProcess(javaOptions = Seq.empty[String]))
+  new Group(t.name, Seq(t), SubProcess(ForkOptions()))
 }
 
 lazy val play = module("jwt-play", "play")
   .settings(
-    libraryDependencies ++= Seq(
-      Libs.play,
-      Libs.playTest,
-      Libs.scalatestPlus
-    ),
+    libraryDependencies ++= Seq(Libs.play, Libs.playTest, Libs.scalatestPlus),
     testGrouping in Test <<= definedTests in Test map groupPlayTest
   )
   .aggregate(playJson)

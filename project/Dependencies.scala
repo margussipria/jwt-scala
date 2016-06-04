@@ -7,7 +7,6 @@ object Dependencies {
     val circe = "0.4.1"
     val scalatest = "2.2.6"
     val scalatestPlus = "1.5.1"
-    val jmockit = "1.24"
     val apacheCodec = "1.10"
     val bouncyCastle = "1.54"
   }
@@ -31,6 +30,5 @@ object Dependencies {
 
     val scalatest = "org.scalatest" %% "scalatest" % V.scalatest % Test
     val scalatestPlus = "org.scalatestplus.play" %% "scalatestplus-play" % V.scalatestPlus % Test
-    val jmockit = "org.jmockit" % "jmockit" % V.jmockit % Test
   }
 }

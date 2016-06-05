@@ -1,6 +1,7 @@
-package eu.sipria.jwt.json4s.native
+package eu.sipria.jwt
+package json4s
+package native
 
-import eu.sipria.jwt.{JwtClaim, JwtHeader}
 import org.json4s.JValue
 
 trait JwtJson4sImplicits {

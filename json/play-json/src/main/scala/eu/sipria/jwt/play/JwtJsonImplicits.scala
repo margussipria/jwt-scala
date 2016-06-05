@@ -1,9 +1,9 @@
-package eu.sipria.jwt.play
+package eu.sipria.jwt
+package play
 
+import _root_.play.api.libs.json._
 import eu.sipria.jwt.algorithms.JwtAlgorithm
 import eu.sipria.jwt.exceptions.{JwtNonNumberException, JwtNonStringException, JwtNonSupportedAlgorithm}
-import eu.sipria.jwt.{JwtClaim, JwtHeader}
-import play.api.libs.json._
 
 trait JwtJsonImplicits {
   private def extractString(json: JsObject, fieldName: String): Option[String] = (json \ fieldName).toOption.flatMap {

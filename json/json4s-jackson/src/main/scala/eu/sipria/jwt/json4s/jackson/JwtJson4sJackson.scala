@@ -1,6 +1,7 @@
-package eu.sipria.jwt.json4s.jackson
+package eu.sipria.jwt
+package json4s
+package jackson
 
-import eu.sipria.jwt.json4s.JwtJson4sCommon
 import org.json4s._
 import org.json4s.jackson.JsonMethods.{parse => jparse, _}
 import org.json4s.jackson.Serialization

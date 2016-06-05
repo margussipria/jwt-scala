@@ -1,9 +1,9 @@
-package eu.sipria.jwt.play
+package eu.sipria.jwt
+package play
 
+import _root_.play.api.libs.json.{JsNull, JsObject, JsString, Json}
 import eu.sipria.jwt.algorithms.JwtAlgorithm
 import eu.sipria.jwt.exceptions.JwtNonStringException
-import eu.sipria.jwt.{JwtClaim, JwtCore, JwtHeader}
-import play.api.libs.json.{JsNull, JsObject, JsString, Json}
 
 object JwtPlayJson extends JwtCore[JsObject] {
   def parse(value: String): JsObject = Json.parse(value).as[JsObject]

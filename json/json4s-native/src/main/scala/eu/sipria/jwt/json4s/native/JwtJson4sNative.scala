@@ -1,6 +1,7 @@
-package eu.sipria.jwt.json4s.native
+package eu.sipria.jwt
+package json4s
+package native
 
-import eu.sipria.jwt.json4s.JwtJson4sCommon
 import org.json4s._
 import org.json4s.native.JsonMethods.{parse => jparse, _}
 import org.json4s.native.Serialization

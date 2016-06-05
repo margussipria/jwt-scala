@@ -1,8 +1,8 @@
-package eu.sipria.jwt.json4s
+package eu.sipria.jwt
+package json4s
 
 import eu.sipria.jwt.algorithms.JwtAlgorithm
 import eu.sipria.jwt.exceptions.{JwtNonNumberException, JwtNonStringException}
-import eu.sipria.jwt.{JwtClaim, JwtCore, JwtHeader}
 import org.json4s.JsonAST.{JField, JInt, JObject, JString}
 import org.json4s.JsonDSL._
 import org.json4s._

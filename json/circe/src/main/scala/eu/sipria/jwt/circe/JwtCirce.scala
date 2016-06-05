@@ -1,8 +1,8 @@
-package eu.sipria.jwt.circe
+package eu.sipria.jwt
+package circe
 
 import eu.sipria.jwt.algorithms.JwtAlgorithm
 import eu.sipria.jwt.exceptions.JwtNonStringException
-import eu.sipria.jwt.{JwtClaim, JwtCore, JwtHeader}
 import io.circe.jawn.{parse => jawnParse}
 import io.circe.syntax._
 import io.circe.{HCursor, Json}

@@ -134,7 +134,7 @@ object JwtToken {
     * @param claim the claim to stringify as a JSON before encoding the token
     */
   def apply[JsonType](header: JwtHeader, claim: JwtClaim[JsonType])(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = header.alg match {
-    case None => apply(jwtJson.getJson(header), jwtJson.getJson(claim))
+    case None => apply(jwtJson.writeHeader(header), jwtJson.writeClaim(claim))
     case _ => throw new JwtNonEmptyAlgorithmException()
   }
 
@@ -164,7 +164,7 @@ object JwtToken {
     * @param algorithm algorithm
     */
   def apply[JsonType](claim: JwtClaim[JsonType], key: Key, algorithm: JwtAlgorithm)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
-    apply(jwtJson.getJson(JwtHeader(algorithm)), jwtJson.getJson(claim), key)
+    apply(jwtJson.writeHeader(JwtHeader(algorithm)), jwtJson.writeClaim(claim), key)
   }
 
   /** An alias of `encode` if you only want to pass a string as the key, the algorithm will be deduced from the header.
@@ -175,6 +175,6 @@ object JwtToken {
     * @param key the secret key to use to sign the token (note that the algorithm will be deduced from the header)
     */
   def apply[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], key: Key)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
-    apply(jwtJson.getJson(header), jwtJson.getJson(claim), key)
+    apply(jwtJson.writeHeader(header), jwtJson.writeClaim(claim), key)
   }
 }

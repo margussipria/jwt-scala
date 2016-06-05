@@ -9,17 +9,15 @@ class JwtCoreSpec extends UnitSpec with Fixture {
   implicit val jwtTime = new JwtTime
 
   implicit val jwtCore = new JwtCore[String] {
-    override def parse(json: String): String = ???
+    def parse(json: String): String = ???
+    def stringify(json: String): String = ???
+    def getAlgorithm(header: String): Option[JwtAlgorithm] = ???
 
-    override def stringify(json: String): String = ???
+    def writeHeader(header: JwtHeader): String = ???
+    def writeClaim(claim: JwtClaim[String]): String = ???
 
-    override def getAlgorithm(header: String): Option[JwtAlgorithm] = ???
-
-    override def getJson(jwtJson: JwtJson): String = ???
-
-    override def parseHeader(header: String): JwtHeader = ???
-
-    override def parseClaim(claim: String): JwtClaim[String] = ???
+    def parseHeader(header: String): JwtHeader = ???
+    def parseClaim(claim: String): JwtClaim[String] = ???
   }
 
   describe("JwtCore") {

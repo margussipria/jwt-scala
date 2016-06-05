@@ -2,7 +2,7 @@ package eu.sipria.jwt.circe
 
 import eu.sipria.jwt.algorithms.JwtAlgorithm
 import eu.sipria.jwt.exceptions.JwtNonStringException
-import eu.sipria.jwt.{JwtClaim, JwtCore, JwtHeader, JwtJson}
+import eu.sipria.jwt.{JwtClaim, JwtCore, JwtHeader}
 import io.circe.jawn.{parse => jawnParse}
 import io.circe.syntax._
 import io.circe.{HCursor, Json}
@@ -24,8 +24,8 @@ object JwtCirce extends JwtCore[Json] {
     }
   }
 
-  def getJson(jwtJson: JwtJson): Json = jwtJson match {
-    case header: JwtHeader => Json.fromFields(Seq(
+  def writeHeader(header: JwtHeader): Json = {
+    Json.fromFields(Seq(
       header.typ
         .map(Json.fromString).map("typ" -> _),
       header.alg.map(_.name).orElse(Option("none"))
@@ -33,18 +33,20 @@ object JwtCirce extends JwtCore[Json] {
       header.cty
         .map(Json.fromString).map("cty" -> _)
     ).flatten)
-    case claim: JwtClaim[Json] =>
-      val value = Json.fromFields(Seq(
-        claim.iss.map(Json.fromString).map("iss" -> _),
-        claim.sub.map(Json.fromString).map("sub" -> _),
-        claim.aud.map(Json.fromString).map("aud" -> _),
-        claim.exp.map(Json.fromLong).map("exp" -> _),
-        claim.nbf.map(Json.fromLong).map("nbf" -> _),
-        claim.iat.map(Json.fromLong).map("iat" -> _),
-        claim.jti.map(Json.fromString).map("jti" -> _)
-      ).flatten)
+  }
 
-      claim.content.deepMerge(value)
+  def writeClaim(claim: JwtClaim[Json]): Json = {
+    val value = Json.fromFields(Seq(
+      claim.iss.map(Json.fromString).map("iss" -> _),
+      claim.sub.map(Json.fromString).map("sub" -> _),
+      claim.aud.map(Json.fromString).map("aud" -> _),
+      claim.exp.map(Json.fromLong).map("exp" -> _),
+      claim.nbf.map(Json.fromLong).map("nbf" -> _),
+      claim.iat.map(Json.fromLong).map("iat" -> _),
+      claim.jti.map(Json.fromString).map("jti" -> _)
+    ).flatten)
+
+    claim.content.deepMerge(value)
   }
 
   def parseHeader(header: Json): JwtHeader = {

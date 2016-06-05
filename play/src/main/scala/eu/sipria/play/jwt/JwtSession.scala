@@ -1,6 +1,6 @@
 package eu.sipria.play.jwt
 
-import play.api.Play
+import _root_.play.api.Application
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json._
 import eu.sipria.jwt._
@@ -43,8 +43,9 @@ case class JwtSession(headerData: JsObject, claimData: JsObject) {
   def get(fieldName: String): Option[JsValue] = (claimData \ fieldName).toOption
 
   /** After retrieving the value, try to read it as T, if no value or fails, returns None. */
-  def getAs[T](fieldName: String)(implicit reader: Reads[T]): Option[T] =
+  def getAs[T](fieldName: String)(implicit reader: Reads[T]): Option[T] = {
     get(fieldName).flatMap(value => reader.reads(value).asOpt)
+  }
 
   /** Alias of `get` */
   def apply(fieldName: String): Option[JsValue] = get(fieldName)
@@ -55,9 +56,9 @@ case class JwtSession(headerData: JsObject, claimData: JsObject) {
   def header: JwtHeader = jwtHeaderReader.reads(headerData).get
 
   /** Encode the session as a JSON Web Token */
-  def serialize: String = JwtSession.key match {
+  def serialize(implicit app: Application): String = JwtSession.key match {
     case Some(k) =>
-      JwtToken(headerData, claimData, JwtUtils.getSigningKey(k.getBytes("UTF-8"), JwtSession.ALGORITHM)).token
+      JwtToken(headerData, claimData, JwtUtils.getSigningKey(k.getBytes("UTF-8"), JwtSession.getAlgorithm)).token
     case _ =>
       JwtToken(headerData, claimData).token
   }
@@ -69,7 +70,9 @@ case class JwtSession(headerData: JsObject, claimData: JsObject) {
   def withHeader(header: JwtHeader): JwtSession = this.copy(headerData = JwtSession.asJsObject(header))
 
   /** If your Play app config has a `session.maxAge`, it will extend the expiration by that amount */
-  def refresh(implicit jwtTime: JwtTime): JwtSession = JwtSession.MAX_AGE.map(sec => this + ("exp", jwtTime.now + sec)).getOrElse(this)
+  def refresh(implicit jwtTime: JwtTime, app: Application): JwtSession = {
+    JwtSession.getMaxAge.map(sec => this + ("exp", jwtTime.now + sec)).getOrElse(this)
+  }
 }
 
 object JwtSession {
@@ -77,8 +80,8 @@ object JwtSession {
   // values to missing keys leading to ConfigException.Null in Typesafe Config
   // Especially strange for the maxAge key. Not having it should mean no session timeout,
   // not crash my app.
-  def wrap[T](getter: String => Option[T]): String => Option[T] = key => try {
-    getter(key)
+  def wrap[T](getter: => Option[T]): Option[T] = try {
+    getter
   } catch {
     case e: com.typesafe.config.ConfigException.Null => None
     case e: java.lang.RuntimeException =>
@@ -88,61 +91,58 @@ object JwtSession {
       }
   }
 
-  val getConfigString = wrap[String](
-    key => Play.maybeApplication.flatMap(_.configuration.getString(key))
-  )
+  def getConfigString(key: String)(implicit app: Application): Option[String] = wrap[String](app.configuration.getString(key))
 
-  val getConfigMillis = wrap[Long](
-    key => Play.maybeApplication.flatMap(_.configuration.getMilliseconds(key))
-  )
+  def getConfigMillis(key: String)(implicit app: Application): Option[Long] = wrap[Long](app.configuration.getMilliseconds(key))
 
-  val HEADER_NAME: String = getConfigString("play.http.session.jwtName").getOrElse("Authorization")
+  def getHeaderName(implicit app: Application): String = getConfigString("play.http.session.jwtName").getOrElse("Authorization")
 
-  val MAX_AGE: Option[Long] = getConfigMillis("play.http.session.maxAge").map(_ / 1000)
+  def getMaxAge(implicit app: Application): Option[Long] = getConfigMillis("play.http.session.maxAge").map(_ / 1000)
 
-  val ALGORITHM: JwtHmacAlgorithm = {
+  def getAlgorithm(implicit app: Application): JwtHmacAlgorithm = {
     getConfigString("play.http.session.algorithm")
       .map(JwtAlgorithm.fromString)
       .flatMap {
-        case algo: JwtHmacAlgorithm => Option(algo)
+        case alg: JwtHmacAlgorithm => Option(alg)
         case _ => throw new RuntimeException("You can only use HMAC algorithms for [play.http.session.algorithm]")
       }
       .getOrElse(JwtAlgorithm.HmacSHA256)
   }
 
-  val TOKEN_PREFIX: String = getConfigString("play.http.session.tokenPrefix").getOrElse("Bearer")
+  def getTokenPrefix(implicit app: Application): String = getConfigString("play.http.session.tokenPrefix").getOrElse("Bearer")
 
-  private def key: Option[String] = getConfigString("play.crypto.secret")
+  private def key(implicit app: Application): Option[String] = getConfigString("play.crypto.secret")
 
-  def deserialize(token: String, options: JwtOptions)(implicit jwtTime: JwtTime): JwtSession = {
+  def deserialize(token: String, options: JwtOptions)(implicit jwtTime: JwtTime, app: Application): JwtSession = {
     val jwtToken = JwtToken(token)
 
     Try (key match {
-      case Some(k) if jwtToken.isValid(JwtUtils.getVerifyKey(k.getBytes("UTF-8"), ALGORITHM), Seq(ALGORITHM), options) => jwtToken
+      case Some(k) if jwtToken.isValid(JwtUtils.getVerifyKey(k.getBytes("UTF-8"), getAlgorithm), Seq(getAlgorithm), options) => jwtToken
       case None if jwtToken.isValid(options) => jwtToken
     })
       .map(jwtToken => JwtSession(jwtToken.header, jwtToken.claim))
       .getOrElse(JwtSession())
   }
 
-  def deserialize(token: String)(implicit jwtTime: JwtTime): JwtSession = deserialize(token, JwtOptions.DEFAULT)
+  def deserialize(token: String)(implicit jwtTime: JwtTime, app: Application): JwtSession = deserialize(token, JwtOptions.DEFAULT)
 
   private def asJsObject[A](value: A)(implicit writer: Writes[A]): JsObject = writer.writes(value) match {
     case value: JsObject => value
     case _ => Json.obj()
   }
 
-  def defaultHeader: JwtHeader = key.map(_ => JwtHeader(ALGORITHM)).getOrElse(JwtHeader())
+  def defaultHeader(implicit app: Application): JwtHeader = key.map(_ => JwtHeader(getAlgorithm)).getOrElse(JwtHeader())
 
-  def defaultClaim(implicit jwtTime: JwtTime): JwtClaim[JsObject] = MAX_AGE match {
+  def defaultClaim(implicit jwtTime: JwtTime, app: Application): JwtClaim[JsObject] = getMaxAge match {
     case Some(seconds) => JwtClaim(content = JsObject.apply(Seq.empty)).expiresIn(seconds)
     case _ => JwtClaim(content = JsObject.apply(Seq.empty))
   }
 
-  def apply(jsClaim: JsObject): JwtSession =
+  def apply(jsClaim: JsObject)(implicit app: Application): JwtSession = {
     JwtSession.apply(asJsObject(defaultHeader), jsClaim)
+  }
 
-  def apply(fields: (String, JsValueWrapper)*)(implicit jwtTime: JwtTime): JwtSession = {
+  def apply(fields: (String, JsValueWrapper)*)(implicit jwtTime: JwtTime, app: Application): JwtSession = {
     if (fields.isEmpty) {
       JwtSession.apply(defaultHeader, defaultClaim)
     } else {
@@ -150,7 +150,7 @@ object JwtSession {
     }
   }
 
-  def apply(claim: JwtClaim[JsObject]): JwtSession = JwtSession.apply(defaultHeader, claim)
+  def apply(claim: JwtClaim[JsObject])(implicit app: Application): JwtSession = JwtSession.apply(defaultHeader, claim)
 
   def apply(header: JwtHeader, claim: JwtClaim[JsObject]): JwtSession = new JwtSession(asJsObject(header), asJsObject(claim))
 }

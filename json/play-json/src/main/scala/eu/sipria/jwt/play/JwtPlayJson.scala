@@ -2,7 +2,7 @@ package eu.sipria.jwt.play
 
 import eu.sipria.jwt.algorithms.JwtAlgorithm
 import eu.sipria.jwt.exceptions.JwtNonStringException
-import eu.sipria.jwt.{JwtClaim, JwtCore, JwtHeader, JwtJson}
+import eu.sipria.jwt.{JwtClaim, JwtCore, JwtHeader}
 import play.api.libs.json.{JsNull, JsObject, JsString, Json}
 
 object JwtPlayJson extends JwtCore[JsObject] {
@@ -14,10 +14,8 @@ object JwtPlayJson extends JwtCore[JsObject] {
     case _ => throw new JwtNonStringException("alg")
   }
 
-  def getJson(jwtJson: JwtJson): JsObject = jwtJson match {
-    case jwtJson: JwtHeader => jwtHeaderWriter.writes(jwtJson)
-    case jwtJson: JwtClaim[JsObject] => jwtClaimWriter.writes(jwtJson)
-  }
+  def writeHeader(header: JwtHeader): JsObject = jwtHeaderWriter.writes(header)
+  def writeClaim(claim: JwtClaim[JsObject]): JsObject = jwtClaimWriter.writes(claim)
 
   def parseHeader(header: JsObject): JwtHeader = jwtHeaderReader.reads(header).get
   def parseClaim(claim: JsObject): JwtClaim[JsObject] = jwtClaimReader.reads(claim).get

@@ -4,6 +4,7 @@ import akka.stream.Materializer
 import akka.util.Timeout
 import eu.sipria.jwt.play.JwtPlayJson
 import eu.sipria.jwt.{Fixture, JwtClaim, JwtTime}
+import play.api.Application
 import play.api.libs.json._
 import play.api.mvc.Results._
 import play.api.mvc._
@@ -21,6 +22,7 @@ trait PlayFixture extends Fixture {
   implicit val userFormat = Json.format[User]
 
   implicit def jwtTime: JwtTime
+  implicit def app: Application
 
   def claimClass: JwtClaim[JsObject] = claimClassString.copy(content = JwtPlayJson.parse(claimClassString.content))
 
@@ -55,7 +57,7 @@ trait PlayFixture extends Fixture {
   def get(action: EssentialAction, header: Option[String] = None) = {
     implicit val mat: Materializer = materializer
     val request = header match {
-      case Some(h) => FakeRequest(GET, "/something").withHeaders((JwtSession.HEADER_NAME, h))
+      case Some(h) => FakeRequest(GET, "/something").withHeaders((JwtSession.getHeaderName, h))
       case _ => FakeRequest(GET, "/something")
     }
 
@@ -67,5 +69,5 @@ trait PlayFixture extends Fixture {
     call(action, FakeRequest(POST, "/something").withJsonBody(body))
   }
 
-  def jwtHeader(of: Future[Result])(implicit timeout: Timeout): Option[String] = header(JwtSession.HEADER_NAME, of)(timeout)
+  def jwtHeader(of: Future[Result])(implicit timeout: Timeout): Option[String] = header(JwtSession.getHeaderName, of)(timeout)
 }

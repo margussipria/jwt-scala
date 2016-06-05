@@ -7,7 +7,8 @@ trait JwtCore[JsonType] {
   def stringify(json: JsonType): String
   def getAlgorithm(header: JsonType): Option[JwtAlgorithm]
 
-  def getJson(jwtJson: JwtJson): JsonType
+  def writeHeader(header: JwtHeader): JsonType
+  def writeClaim(claim: JwtClaim[JsonType]): JsonType
 
   def parseHeader(header: JsonType): JwtHeader
   def parseClaim(claim: JsonType): JwtClaim[JsonType]

@@ -2,7 +2,7 @@ package eu.sipria.jwt.json4s
 
 import eu.sipria.jwt.algorithms.JwtAlgorithm
 import eu.sipria.jwt.exceptions.{JwtNonNumberException, JwtNonStringException}
-import eu.sipria.jwt.{JwtClaim, JwtCore, JwtHeader, JwtJson}
+import eu.sipria.jwt.{JwtClaim, JwtCore, JwtHeader}
 import org.json4s.JsonAST.{JField, JInt, JObject, JString}
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -92,12 +92,6 @@ trait JwtJson4sCommon extends JwtCore[JValue] {
   } match {
     case res: JObject => res
     case _ => throw new RuntimeException("How did we manage to go from JObject to something else by just removing fields?")
-  }
-
-
-  def getJson(jwtJson: JwtJson): JValue = jwtJson match {
-    case header: JwtHeader => writeHeader(header)
-    case claim: JwtClaim[JValue] => writeClaim(claim)
   }
 
   def parseHeader(header: JValue): JwtHeader = readHeader(header)

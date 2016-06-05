@@ -46,7 +46,7 @@ class JwtSessionCustomSpec extends PlaySpec with OneAppPerSuite with BeforeAndAf
   "JwtSession" must {
     "read default configuration" in {
       assert(JwtSession.defaultHeader === JwtHeader(JwtAlgorithm.HS512))
-      assert(JwtSession.ALGORITHM === JwtAlgorithm.HS512)
+      assert(JwtSession.getAlgorithm === JwtAlgorithm.HS512)
     }
 
     "init" in {

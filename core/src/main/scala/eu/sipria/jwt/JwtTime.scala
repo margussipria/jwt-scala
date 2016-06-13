@@ -50,7 +50,5 @@ class JwtTime {
 }
 
 object JwtTime {
-  def apply(): JwtTime = new JwtTime
-
   def format(time: Long): String = Instant.ofEpochSecond(time).toString
 }

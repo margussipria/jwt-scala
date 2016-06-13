@@ -17,7 +17,7 @@ class JwtSessionSpec extends PlaySpec with OneAppPerSuite with PlayFixture {
   def HEADER_NAME = "Authorization"
 
   implicit override lazy val app: Application = FakeApplication(
-    additionalConfiguration = Map("play.crypto.secret" -> secretKey)
+    additionalConfiguration = Map("eu.sipria.play.jwt.key.hmac.secret" -> secretKey)
   )
 
   val session = JwtSession().withHeader(JwtHeader(JwtAlgorithm.HmacSHA256))
@@ -28,50 +28,50 @@ class JwtSessionSpec extends PlaySpec with OneAppPerSuite with PlayFixture {
 
   "Init FakeApplication" must {
     "have the correct config" in {
-      app.configuration.getString("play.crypto.secret") mustEqual Option(secretKey)
+      app.configuration.getString("eu.sipria.play.jwt.key.hmac.secret") mustEqual Option(secretKey)
     }
   }
 
   "JwtSession" must {
     "read default configuration" in {
-      assert(JwtSession.defaultHeader == JwtHeader(JwtAlgorithm.HmacSHA256))
+      assert(JwtSession.defaultHeader === JwtHeader(JwtAlgorithm.HmacSHA256))
     }
 
     "init" in {
-      assert(session.headerData == Json.obj("typ" -> "JWT", "alg" -> "HmacSHA256"))
-      assert(session.claimData == Json.obj())
+      assert(session.headerData === Json.obj("typ" -> "JWT", "alg" -> "HmacSHA256"))
+      assert(session.claimData === Json.obj())
       assert(session.isEmpty)
     }
 
     "add stuff" in {
-      assert((session + Json.obj("a" -> 1)).claimData == Json.obj("a" -> 1))
-      assert((session + ("a", 1) + ("b", "c")).claimData == Json.obj("a" -> 1, "b" -> "c"))
-      assert((session + ("user", user)).claimData == Json.obj("user" -> userJson))
-      assert((session ++ (("a", 1), ("b", "c"))).claimData == Json.obj("a" -> 1, "b" -> "c"))
+      assert((session + Json.obj("a" -> 1)).claimData === Json.obj("a" -> 1))
+      assert((session + ("a", 1) + ("b", "c")).claimData === Json.obj("a" -> 1, "b" -> "c"))
+      assert((session + ("user", user)).claimData === Json.obj("user" -> userJson))
+      assert((session ++ (("a", 1), ("b", "c"))).claimData === Json.obj("a" -> 1, "b" -> "c"))
 
-      assert((session + ("a", 1) + ("b", "c") + ("user", user)).claimData == Json.obj("a" -> 1, "b" -> "c", "user" -> userJson))
+      assert((session + ("a", 1) + ("b", "c") + ("user", user)).claimData === Json.obj("a" -> 1, "b" -> "c", "user" -> userJson))
 
       val sessionBis = session + ("a", 1) + ("b", "c")
       val sessionTer = sessionBis ++ (("d", true), ("e", 42))
       val sessionQuad = sessionTer + ("user", user)
-      assert(sessionQuad.claimData == Json.obj("a" -> 1, "b" -> "c", "d" -> true, "e" -> 42, "user" -> userJson))
+      assert(sessionQuad.claimData === Json.obj("a" -> 1, "b" -> "c", "d" -> true, "e" -> 42, "user" -> userJson))
     }
 
     "remove stuff" in {
-      assert((session2 - "e" - "f" - "user").claimData == Json.obj("a" -> 1, "b" -> "c"))
-      assert((session2 -- ("e", "f", "user")).claimData == Json.obj("a" -> 1, "b" -> "c"))
+      assert((session2 - "e" - "f" - "user").claimData === Json.obj("a" -> 1, "b" -> "c"))
+      assert((session2 -- ("e", "f", "user")).claimData === Json.obj("a" -> 1, "b" -> "c"))
     }
 
     "get stuff" in {
-      assert(session2("a") == Option(JsNumber(1)))
-      assert(session2("b") == Option(JsString("c")))
-      assert(session2("e") == Option(JsBoolean(true)))
-      assert(session2("f") == Option(Json.arr(1, 2, 3)))
+      assert(session2("a") === Option(JsNumber(1)))
+      assert(session2("b") === Option(JsString("c")))
+      assert(session2("e") === Option(JsBoolean(true)))
+      assert(session2("f") === Option(Json.arr(1, 2, 3)))
       assert(session2("nope") match { case None => true; case _ => false })
-      assert(session2.get("a") == Option(JsNumber(1)))
-      assert(session2.get("b") == Option(JsString("c")))
-      assert(session2.get("e") == Option(JsBoolean(true)))
-      assert(session2.get("f") == Option(Json.arr(1, 2, 3)))
+      assert(session2.get("a") === Option(JsNumber(1)))
+      assert(session2.get("b") === Option(JsString("c")))
+      assert(session2.get("e") === Option(JsBoolean(true)))
+      assert(session2.get("f") === Option(Json.arr(1, 2, 3)))
       assert(session2.get("nope") match { case None => true; case _ => false })
       assert(session2.getAs[User]("user") === Option(user))
       assert(session2.getAs[User]("nope") === None)
@@ -83,12 +83,12 @@ class JwtSessionSpec extends PlaySpec with OneAppPerSuite with PlayFixture {
     }
 
     "serialize" in {
-      assert(session3.serialize == token)
+      assert(session3.serialize === token)
     }
 
     "deserialize" in {
       implicit val jwtTime = mockValidTime
-      assert(JwtSession.deserialize(token) == session3)
+      assert(JwtSession.deserialize(token) === session3)
     }
   }
 

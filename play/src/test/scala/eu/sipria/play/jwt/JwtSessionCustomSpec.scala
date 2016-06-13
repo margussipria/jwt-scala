@@ -21,11 +21,11 @@ class JwtSessionCustomSpec extends PlaySpec with OneAppPerSuite with BeforeAndAf
 
   implicit override lazy val app: Application = FakeApplication(
     additionalConfiguration = Map(
-      "play.crypto.secret" -> secretKey,
-      "play.http.session.jwtName" -> HEADER_NAME,
+      "eu.sipria.play.jwt.key.hmac.secret" -> secretKey,
+      "eu.sipria.play.jwt.name" -> HEADER_NAME,
       "play.http.session.maxAge" -> sessionTimeout * 1000, // 10sec... that's really short :)
-      "play.http.session.algorithm" -> "HS512",
-      "play.http.session.tokenPrefix" -> ""
+      "eu.sipria.play.jwt.algorithm" -> "HS512",
+      "eu.sipria.play.jwt.token.prefix" -> ""
     )
   )
 
@@ -35,10 +35,10 @@ class JwtSessionCustomSpec extends PlaySpec with OneAppPerSuite with BeforeAndAf
 
   "Init FakeApplication" must {
     "have the correct config" in {
-      app.configuration.getString("play.crypto.secret") mustEqual Option(secretKey)
-      app.configuration.getString("play.http.session.jwtName") mustEqual Option(HEADER_NAME)
-      app.configuration.getString("play.http.session.algorithm") mustEqual Option("HS512")
-      app.configuration.getString("play.http.session.tokenPrefix") mustEqual Option("")
+      app.configuration.getString("eu.sipria.play.jwt.key.hmac.secret") mustEqual Option(secretKey)
+      app.configuration.getString("eu.sipria.play.jwt.name") mustEqual Option(HEADER_NAME)
+      app.configuration.getString("eu.sipria.play.jwt.algorithm") mustEqual Option("HS512")
+      app.configuration.getString("eu.sipria.play.jwt.token.prefix") mustEqual Option("")
       app.configuration.getMilliseconds("play.http.session.maxAge") mustEqual Option(sessionTimeout * 1000)
     }
   }

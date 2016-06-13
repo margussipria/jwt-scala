@@ -16,7 +16,7 @@ class JwtResultSpec extends PlaySpec with OneAppPerSuite with PlayFixture {
   implicit val jwtTime = new JwtTime
 
   implicit override lazy val app: Application = FakeApplication(
-    additionalConfiguration = Map("play.crypto.secret" -> secretKey)
+    additionalConfiguration = Map("eu.sipria.play.jwt.key.hmac.secret" -> secretKey)
   )
 
   val session = JwtSession().withHeader(JwtHeader(JwtAlgorithm.HmacSHA256))

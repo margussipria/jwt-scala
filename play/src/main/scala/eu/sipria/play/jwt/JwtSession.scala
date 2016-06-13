@@ -1,10 +1,12 @@
 package eu.sipria.play.jwt
 
+import java.security.Key
+
 import _root_.play.api.Application
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.libs.json._
 import eu.sipria.jwt._
-import eu.sipria.jwt.algorithms.{JwtAlgorithm, JwtHmacAlgorithm}
+import eu.sipria.jwt.algorithms.{JwtAlgorithm, JwtHmacAlgorithm, JwtRSAAlgorithm}
 
 import scala.util.Try
 
@@ -56,11 +58,11 @@ case class JwtSession(headerData: JsObject, claimData: JsObject) {
   def header: JwtHeader = jwtHeaderReader.reads(headerData).get
 
   /** Encode the session as a JSON Web Token */
-  def serialize(implicit app: Application): String = JwtSession.key match {
-    case Some(k) =>
-      JwtToken(headerData, claimData, JwtUtils.getSigningKey(k.getBytes("UTF-8"), JwtSession.getAlgorithm)).token
+  def serialize(implicit app: Application): String = JwtSession.getSigningKey match {
+    case Some(key) =>
+      JwtToken.encode(headerData, claimData, key).token
     case _ =>
-      JwtToken(headerData, claimData).token
+      JwtToken.encode(headerData, claimData).token
   }
 
   /** Override the `claimData` */
@@ -91,35 +93,98 @@ object JwtSession {
       }
   }
 
+  def getConfigBoolean(key: String)(implicit app: Application): Option[Boolean] = wrap[Boolean](app.configuration.getBoolean(key))
+
   def getConfigString(key: String)(implicit app: Application): Option[String] = wrap[String](app.configuration.getString(key))
 
   def getConfigMillis(key: String)(implicit app: Application): Option[Long] = wrap[Long](app.configuration.getMilliseconds(key))
 
-  def getHeaderName(implicit app: Application): String = getConfigString("play.http.session.jwtName").getOrElse("Authorization")
+  def getHeaderName(implicit app: Application): String = getConfigString("eu.sipria.play.jwt.name").getOrElse("Authorization")
 
   def getMaxAge(implicit app: Application): Option[Long] = getConfigMillis("play.http.session.maxAge").map(_ / 1000)
 
-  def getAlgorithm(implicit app: Application): JwtHmacAlgorithm = {
-    getConfigString("play.http.session.algorithm")
+  def getAlgorithm(implicit app: Application): JwtAlgorithm = {
+    getConfigString("eu.sipria.play.jwt.algorithm")
       .map(JwtAlgorithm.fromString)
       .flatMap {
         case alg: JwtHmacAlgorithm => Option(alg)
-        case _ => throw new RuntimeException("You can only use HMAC algorithms for [play.http.session.algorithm]")
+        case alg: JwtRSAAlgorithm => Option(alg)
+        case _ => throw new RuntimeException("You can only use HMAC algorithms for [eu.sipria.play.jwt.algorithm]")
       }
       .getOrElse(JwtAlgorithm.HmacSHA256)
   }
 
-  def getTokenPrefix(implicit app: Application): String = getConfigString("play.http.session.tokenPrefix").getOrElse("Bearer")
+  def getTokenPrefix(implicit app: Application): String = getConfigString("eu.sipria.play.jwt.token.prefix").map(_.trim).getOrElse("Bearer")
 
-  private def key(implicit app: Application): Option[String] = getConfigString("play.crypto.secret")
+  private def getPublicVerifyKey(key: String, base64: Boolean, `type`: String)(implicit app: Application): Option[Key] = {
+    getConfigString(key) map { public =>
+      val file = scala.io.Source.fromFile(public, "ISO-8859-1").mkString
+      base64 match {
+        case true => JwtUtils.getVerifyKeyFromBase64(file, getAlgorithm)
+        case false => JwtUtils.parsePublicKey(file.getBytes("UTF-8"), `type`)
+      }
+    }
+  }
+
+  private def getVerifyKey(implicit app: Application): Option[Key] = {
+    val base64: Boolean = getConfigBoolean("eu.sipria.play.jwt.key.base64").getOrElse(false)
+
+    getConfigString("eu.sipria.play.jwt.key.type") match {
+      case Some(JwtUtils.HMAC) =>
+        getConfigString("eu.sipria.play.jwt.key.hmac.secret") map { secret =>
+          base64 match {
+            case true => JwtUtils.getVerifyKeyFromBase64(secret, getAlgorithm)
+            case false => JwtUtils.getVerifyKey(secret.getBytes("UTF-8"), getAlgorithm)
+          }
+        }
+
+      case Some(JwtUtils.RSA) => getPublicVerifyKey("eu.sipria.play.jwt.key.rsa.public", base64, JwtUtils.RSA)
+
+      case Some(JwtUtils.ECDSA) => getPublicVerifyKey("eu.sipria.play.jwt.key.ecdsa.public", base64, JwtUtils.ECDSA)
+
+      case value => throw new Exception(s"Jwt key type [${value.getOrElse("-")}] is not supported")
+    }
+  }
+
+  private def getPrivateSigningKey(key: String, base64: Boolean, `type`: String)(implicit app: Application): Option[Key] = {
+    getConfigString(key) map { public =>
+      val file = scala.io.Source.fromFile(public, "ISO-8859-1").mkString
+      base64 match {
+        case true => JwtUtils.getSigningKeyFromBase64(file, getAlgorithm)
+        case false => JwtUtils.parsePrivateKey(file.getBytes("UTF-8"), `type`)
+      }
+    }
+  }
+
+  private def getSigningKey(implicit app: Application): Option[Key] = {
+    val base64: Boolean = getConfigBoolean("eu.sipria.play.jwt.key.base64").getOrElse(false)
+
+    getConfigString("eu.sipria.play.jwt.key.type") match {
+      case Some(JwtUtils.HMAC) =>
+        getConfigString("eu.sipria.play.jwt.key.hmac.secret") map { secret =>
+          base64 match {
+            case true => JwtUtils.getVerifyKeyFromBase64(secret, getAlgorithm)
+            case false => JwtUtils.getVerifyKey(secret.getBytes("UTF-8"), getAlgorithm)
+          }
+        }
+
+      case Some(JwtUtils.RSA) => getPrivateSigningKey("eu.sipria.play.jwt.key.rsa.private", base64, JwtUtils.RSA)
+
+      case Some(JwtUtils.ECDSA) => getPrivateSigningKey("eu.sipria.play.jwt.key.ecdsa.private", base64, JwtUtils.RSA)
+
+      case value => throw new Exception(s"Jwt key type [${value.getOrElse("-")}] is not supported")
+    }
+  }
 
   def deserialize(token: String, options: JwtOptions)(implicit jwtTime: JwtTime, app: Application): JwtSession = {
-    val jwtToken = JwtToken(token)
+    val jwtToken = JwtToken.decode(token)
 
-    Try (key match {
-      case Some(k) if jwtToken.isValid(JwtUtils.getVerifyKey(k.getBytes("UTF-8"), getAlgorithm), Seq(getAlgorithm), options) => jwtToken
-      case None if jwtToken.isValid(options) => jwtToken
-    })
+    Try {
+      getVerifyKey match {
+        case Some(key) if jwtToken.isValid(key, Seq(getAlgorithm), options) => jwtToken
+        case None if jwtToken.isValid(options) => jwtToken
+      }
+    }
       .map(jwtToken => JwtSession(jwtToken.header, jwtToken.claim))
       .getOrElse(JwtSession())
   }
@@ -131,7 +196,7 @@ object JwtSession {
     case _ => Json.obj()
   }
 
-  def defaultHeader(implicit app: Application): JwtHeader = key.map(_ => JwtHeader(getAlgorithm)).getOrElse(JwtHeader())
+  def defaultHeader(implicit app: Application): JwtHeader = JwtHeader(getAlgorithm)
 
   def defaultClaim(implicit jwtTime: JwtTime, app: Application): JwtClaim[JsObject] = getMaxAge match {
     case Some(seconds) => JwtClaim(content = JsObject.apply(Seq.empty)).expiresIn(seconds)

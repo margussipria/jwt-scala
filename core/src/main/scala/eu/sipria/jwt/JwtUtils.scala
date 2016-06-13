@@ -11,6 +11,7 @@ import org.bouncycastle.util.Arrays
 
 object JwtUtils {
   val PROVIDER = "BC"
+  val HMAC = "HMAC"
   val RSA = "RSA"
   val ECDSA = "ECDSA"
 
@@ -27,7 +28,7 @@ object JwtUtils {
       .trim
   )
 
-  private def parsePrivateKey(key: Array[Byte], keyAlg: String): PrivateKey = {
+  def parsePrivateKey(key: Array[Byte], keyAlg: String): PrivateKey = {
     val spec = new PKCS8EncodedKeySpec(key)
     KeyFactory.getInstance(keyAlg, PROVIDER).generatePrivate(spec)
   }
@@ -44,7 +45,7 @@ object JwtUtils {
     case alg: JwtECDSAAlgorithm  => getSigningKey(parseKey(key), algorithm)
   }
 
-  private def parsePublicKey(key: Array[Byte], keyAlg: String): PublicKey = {
+  def parsePublicKey(key: Array[Byte], keyAlg: String): PublicKey = {
     val spec = new X509EncodedKeySpec(key)
     KeyFactory.getInstance(keyAlg, PROVIDER).generatePublic(spec)
   }

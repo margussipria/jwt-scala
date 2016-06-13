@@ -45,7 +45,7 @@ class JwtCoreSpec extends UnitSpec with Fixture {
       val tokens = Seq("1", "abcde", "", "a.b.c.d")
 
       tokens.foreach { token =>
-        intercept[JwtLengthException] { JwtToken(token) }
+        intercept[JwtLengthException] { JwtToken.decode(token) }
       }
     }
 
@@ -54,7 +54,7 @@ class JwtCoreSpec extends UnitSpec with Fixture {
 
       tokens.foreach { token =>
         intercept[IllegalArgumentException] {
-          JwtToken(token).isValid(JwtUtils.getVerifyKeyFromBase64(secretKeyBase64, HmacSHA256), JwtAlgorithm.allHmac)
+          JwtToken.decode(token).isValid(JwtUtils.getVerifyKeyFromBase64(secretKeyBase64, HmacSHA256), JwtAlgorithm.allHmac)
         }
       }
     }

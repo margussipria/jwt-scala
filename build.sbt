@@ -126,7 +126,8 @@ lazy val play = module("jwt-play", "play")
 lazy val examplePlayAngularProject = module("play-angular-example", "examples/play-angular")
   .settings(localSettings)
   .settings(
-    routesGenerator := InjectedRoutesGenerator
+    routesGenerator := InjectedRoutesGenerator,
+    libraryDependencies ++= Seq(Libs.scalatestPlus)
   )
   .enablePlugins(PlayScala)
   .aggregate(play)

@@ -68,7 +68,7 @@ case class JwtToken[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], data
 
   // Validate if an algorithm is inside the authorized range
   protected def validateAlgorithm(algorithm: JwtAlgorithm, algorithms: Seq[JwtAlgorithm]): Boolean = {
-    algorithms.contains(algorithm)
+    algorithms.map(_.fullName).contains(algorithm.fullName)
   }
 
   def isValid(options: JwtOptions)(implicit jwtTime: JwtTime): Boolean = validate(options).getOrElse(default = false)
@@ -103,7 +103,7 @@ object JwtToken {
     * @param token token
     * @return JwtToken that can be validated
     */
-  def apply[JsonType](token: String)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
+  def decode[JsonType](token: String)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
     val (header64, header, claim64, claim, signature) = splitToken(token)
     val data = header64 + "." + claim64
     JwtToken(jwtJson.parseHeader(header), jwtJson.parseClaim(claim), data, signature)
@@ -113,7 +113,7 @@ object JwtToken {
     "The key type doesn't match the algorithm type. It's either a SecretKey and a HMAC algorithm or a PrivateKey and a RSA or ECDSA algorithm. And an algorithm is required of course."
   )
 
-  def apply[JsonType](header: JsonType, claim: JsonType)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
+  def encode[JsonType](header: JsonType, claim: JsonType)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
 
     val data = JwtBase64.encodeString(jwtJson.stringify(header)) + "." + JwtBase64.encodeString(jwtJson.stringify(claim))
 
@@ -133,12 +133,12 @@ object JwtToken {
     * @param header the header to stringify as a JSON before encoding the token
     * @param claim the claim to stringify as a JSON before encoding the token
     */
-  def apply[JsonType](header: JwtHeader, claim: JwtClaim[JsonType])(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = header.alg match {
-    case None => apply(jwtJson.writeHeader(header), jwtJson.writeClaim(claim))
+  def encode[JsonType](header: JwtHeader, claim: JwtClaim[JsonType])(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = header.alg match {
+    case None => encode(jwtJson.writeHeader(header), jwtJson.writeClaim(claim))
     case _ => throw new JwtNonEmptyAlgorithmException()
   }
 
-  def apply[JsonType](header: JsonType, claim: JsonType, key: Key)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
+  def encode[JsonType](header: JsonType, claim: JsonType, key: Key)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
 
     val data = JwtBase64.encodeString(jwtJson.stringify(header)) + "." + JwtBase64.encodeString(jwtJson.stringify(claim))
 
@@ -163,8 +163,8 @@ object JwtToken {
     * @param key key
     * @param algorithm algorithm
     */
-  def apply[JsonType](claim: JwtClaim[JsonType], key: Key, algorithm: JwtAlgorithm)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
-    apply(jwtJson.writeHeader(JwtHeader(algorithm)), jwtJson.writeClaim(claim), key)
+  def encode[JsonType](claim: JwtClaim[JsonType], key: Key, algorithm: JwtAlgorithm)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
+    encode(jwtJson.writeHeader(JwtHeader(algorithm)), jwtJson.writeClaim(claim), key)
   }
 
   /** An alias of `encode` if you only want to pass a string as the key, the algorithm will be deduced from the header.
@@ -174,7 +174,7 @@ object JwtToken {
     * @param claim the claim to stringify as a JSON before encoding the token
     * @param key the secret key to use to sign the token (note that the algorithm will be deduced from the header)
     */
-  def apply[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], key: Key)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
-    apply(jwtJson.writeHeader(header), jwtJson.writeClaim(claim), key)
+  def encode[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], key: Key)(implicit jwtJson: JwtCore[JsonType]): JwtToken[JsonType] = {
+    encode(jwtJson.writeHeader(header), jwtJson.writeClaim(claim), key)
   }
 }

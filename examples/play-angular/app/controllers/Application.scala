@@ -1,24 +1,24 @@
 package controllers
 
-import play.api._
-import play.api.mvc._
-import play.api.libs.json._
-import play.api.libs.functional.syntax._
-
-import pdi.jwt._
-
+import com.google.inject.{Inject, Singleton}
+import eu.sipria.play.jwt._
 import models.User
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+import play.api.mvc._
 
-class Application extends Controller with Secured {
+@Singleton
+class Application @Inject() ()(implicit val app: play.api.Application) extends Controller with Secured {
   val passwords = Seq("red", "blue", "green")
 
   def index = Action {
     Ok(views.html.index())
   }
 
-  private val loginForm: Reads[(String, String)] =
+  private val loginForm: Reads[(String, String)] = (
     (JsPath \ "username").read[String] and
-    (JsPath \ "password").read[String] tupled
+    (JsPath \ "password").read[String]
+  ).tupled
 
   def login = Action(parse.json) { implicit request =>
     request.body.validate(loginForm).fold(

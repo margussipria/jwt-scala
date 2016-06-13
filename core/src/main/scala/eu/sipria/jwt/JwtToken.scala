@@ -6,7 +6,7 @@ import javax.crypto.SecretKey
 import eu.sipria.jwt.algorithms.{JwtAlgorithm, JwtAsymmetricAlgorithm, JwtHmacAlgorithm}
 import eu.sipria.jwt.exceptions._
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 case class JwtToken[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], data: String, signature: String)(implicit jwtJson: JwtCore[JsonType]) {
 
@@ -107,6 +107,30 @@ object JwtToken {
     val (header64, header, claim64, claim, signature) = splitToken(token)
     val data = header64 + "." + claim64
     JwtToken(jwtJson.parseHeader(header), jwtJson.parseClaim(claim), data, signature)
+  }
+
+  def decodeAndValidate[JsonType](token: String, options: JwtOptions)(implicit jwtJson: JwtCore[JsonType], jwtTime: JwtTime): Try[JwtToken[JsonType]] = {
+    val jwtToken = decode(token)
+    jwtToken.validate(options) flatMap {
+      case true => Success(jwtToken)
+      case false => Failure(new JwtValidationException("Could validate jwt token"))
+    }
+  }
+
+  def decodeAndValidate[JsonType](token: String)(implicit jwtJson: JwtCore[JsonType], jwtTime: JwtTime): Try[JwtToken[JsonType]] = {
+    decodeAndValidate(token, JwtOptions.DEFAULT)
+  }
+
+  def decodeAndValidate[JsonType](token: String, key: Key, algorithms: Seq[JwtAlgorithm], options: JwtOptions = JwtOptions.DEFAULT)(
+    implicit jwtJson: JwtCore[JsonType],
+    jwtTime: JwtTime
+  ): Try[JwtToken[JsonType]] = {
+
+    val jwtToken = decode(token)
+    jwtToken.validate(key, algorithms, options) flatMap {
+      case true => Success(jwtToken)
+      case false => Failure(new JwtValidationException("Could validate jwt token"))
+    }
   }
 
   private def validationException: JwtValidationException = new JwtValidationException(

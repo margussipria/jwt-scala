@@ -177,13 +177,10 @@ object JwtSession {
   }
 
   def deserialize(token: String, options: JwtOptions)(implicit jwtTime: JwtTime, app: Application): JwtSession = {
-    val jwtToken = JwtToken.decode(token)
 
-    Try {
-      getVerifyKey match {
-        case Some(key) if jwtToken.isValid(key, Seq(getAlgorithm), options) => jwtToken
-        case None if jwtToken.isValid(options) => jwtToken
-      }
+    Try(getVerifyKey).flatMap {
+      case Some(key) => JwtToken.decodeAndValidate(token, key, Seq(getAlgorithm), options)
+      case None => JwtToken.decodeAndValidate(token, options)
     }
       .map(jwtToken => JwtSession(jwtToken.header, jwtToken.claim))
       .getOrElse(JwtSession())

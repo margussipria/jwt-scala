@@ -1,8 +1,8 @@
 package eu.sipria.play.jwt
 
 import akka.stream.Materializer
+import eu.sipria.jwt.JwtHeader
 import eu.sipria.jwt.algorithms.JwtAlgorithm
-import eu.sipria.jwt.{JwtHeader, JwtTime}
 import org.scalatestplus.play._
 import play.api.Application
 import play.api.libs.json._
@@ -12,8 +12,6 @@ import play.api.test._
 class JwtResultSpec extends PlaySpec with OneAppPerSuite with PlayFixture {
   val HEADER_NAME = "Authorization"
   val materializer: Materializer = app.materializer
-
-  implicit val jwtTime = new JwtTime
 
   implicit override lazy val app: Application = FakeApplication(
     additionalConfiguration = Map("eu.sipria.play.jwt.key.hmac.secret" -> secretKey)

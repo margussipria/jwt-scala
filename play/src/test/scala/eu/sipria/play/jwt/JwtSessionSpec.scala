@@ -2,7 +2,7 @@ package eu.sipria.play.jwt
 
 import akka.stream.Materializer
 import eu.sipria.jwt.algorithms.JwtAlgorithm
-import eu.sipria.jwt.{JwtHeader, JwtTime}
+import eu.sipria.jwt.{JwtHeader, JwtOptions, JwtTime}
 import org.scalatestplus.play._
 import play.api.Application
 import play.api.libs.json._
@@ -11,8 +11,6 @@ import play.api.test._
 
 class JwtSessionSpec extends PlaySpec with OneAppPerSuite with PlayFixture {
   val materializer: Materializer = app.materializer
-
-  implicit val jwtTime = new JwtTime
 
   def HEADER_NAME = "Authorization"
 
@@ -87,8 +85,7 @@ class JwtSessionSpec extends PlaySpec with OneAppPerSuite with PlayFixture {
     }
 
     "deserialize" in {
-      implicit val jwtTime = mockValidTime
-      assert(JwtSession.deserialize(token) === session3)
+      assert(JwtSession.deserialize(token, JwtOptions(expiration = false)) === session3)
     }
   }
 

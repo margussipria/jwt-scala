@@ -10,8 +10,7 @@ import org.json4s._
 trait JwtJson4sCommon extends JwtCore[JValue] {
   def getAlgorithm(header: JValue): Option[JwtAlgorithm] = header \ "alg" match {
     case JString(alg) => JwtAlgorithm.optionFromString(alg)
-    case JNull => None
-    case JNothing => None
+    case JNull | JNothing => None
     case _ => throw new JwtNonStringException("alg")
   }
 
@@ -68,15 +67,13 @@ trait JwtJson4sCommon extends JwtCore[JValue] {
 
   private def extractString(json: JObject, fieldName: String): Option[String] = json \ fieldName match {
     case JString(value) => Option(value)
-    case JNull => None
-    case JNothing => None
+    case JNull | JNothing => None
     case _ => throw new JwtNonStringException(fieldName)
   }
 
   private def extractLong(json: JObject, fieldName: String): Option[Long] = json \ fieldName match {
     case JInt(value) => Option(value.toLong)
-    case JNull => None
-    case JNothing => None
+    case JNull | JNothing => None
     case _ => throw new JwtNonNumberException(fieldName)
   }
 

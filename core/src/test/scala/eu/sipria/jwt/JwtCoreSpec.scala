@@ -6,8 +6,6 @@ import eu.sipria.jwt.exceptions.JwtLengthException
 
 class JwtCoreSpec extends UnitSpec with Fixture {
 
-  implicit val jwtTime = new JwtTime
-
   implicit val jwtCore = new JwtCore[String] {
     def parse(json: String): String = ???
     def stringify(json: String): String = ???
@@ -20,15 +18,15 @@ class JwtCoreSpec extends UnitSpec with Fixture {
     def parseClaim(claim: String): JwtClaim[String] = ???
   }
 
+  val jwtOptions = JwtOptions(expiration = false, notBefore = false)
+
   describe("JwtCore") {
     it("should validate correct tokens") {
-      implicit val jwtTime = mockValidTime
-
       data foreach { d =>
         assertResult(true, d.alg.fullName) {
           val token = JwtToken(d.headerClass, claimClassString, d.header64 + "." + claim64, d.signature)
 
-          token.isValid(JwtUtils.getVerifyKeyFromBase64(secretKeyBase64, d.alg), JwtAlgorithm.allHmac)
+          token.isValid(JwtUtils.getVerifyKeyFromBase64(secretKeyBase64, d.alg), JwtAlgorithm.allHmac, jwtOptions)
         }
       }
 
@@ -36,7 +34,7 @@ class JwtCoreSpec extends UnitSpec with Fixture {
         assertResult(true, d.alg.fullName) {
           val token = JwtToken(d.headerClass, claimClassString, d.header64 + "." + claim64, d.signature)
 
-          token.isValid(JwtUtils.getVerifyKeyFromBase64(publicKeyRSA, d.alg), JwtAlgorithm.allRSA)
+          token.isValid(JwtUtils.getVerifyKeyFromBase64(publicKeyRSA, d.alg), JwtAlgorithm.allRSA, jwtOptions)
         }
       }
     }
@@ -54,7 +52,7 @@ class JwtCoreSpec extends UnitSpec with Fixture {
 
       tokens.foreach { token =>
         intercept[IllegalArgumentException] {
-          JwtToken.decode(token).isValid(JwtUtils.getVerifyKeyFromBase64(secretKeyBase64, HmacSHA256), JwtAlgorithm.allHmac)
+          JwtToken.decode(token).isValid(JwtUtils.getVerifyKeyFromBase64(secretKeyBase64, HmacSHA256), JwtAlgorithm.allHmac, jwtOptions)
         }
       }
     }

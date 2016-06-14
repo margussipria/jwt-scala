@@ -1,14 +1,14 @@
 package eu.sipria.play.jwt
 
 import akka.stream.Materializer
-import eu.sipria.jwt.JwtHeader
 import eu.sipria.jwt.algorithms.JwtAlgorithm
+import eu.sipria.jwt._
 import org.scalatest._
 import org.scalatestplus.play._
-import play.api.Application
-import play.api.libs.json._
-import play.api.test.Helpers._
-import play.api.test._
+import _root_.play.api.Application
+import _root_.play.api.libs.json._
+import _root_.play.api.test.Helpers._
+import _root_.play.api.test._
 
 class JwtSessionCustomSpec extends PlaySpec with OneAppPerSuite with BeforeAndAfter with PlayFixture {
   val materializer: Materializer = app.materializer
@@ -16,8 +16,6 @@ class JwtSessionCustomSpec extends PlaySpec with OneAppPerSuite with BeforeAndAf
   // Just for test, users shouldn't change the header name normally
   def HEADER_NAME = "Auth"
   def sessionTimeout = 10
-
-  implicit var jwtTime = mockTime(validTime)
 
   implicit override lazy val app: Application = FakeApplication(
     additionalConfiguration = Map(
@@ -46,12 +44,12 @@ class JwtSessionCustomSpec extends PlaySpec with OneAppPerSuite with BeforeAndAf
   "JwtSession" must {
     "read default configuration" in {
       assert(JwtSession.defaultHeader === JwtHeader(JwtAlgorithm.HS512))
-      assert(JwtSession.getAlgorithm === JwtAlgorithm.HS512)
+      assert(configuration.algorithm === Some(JwtAlgorithm.HS512))
     }
 
     "init" in {
       assert(session.headerData === Json.obj("typ" -> "JWT", "alg" -> "HS512"))
-      assert(session.claimData === Json.obj("exp" -> (validTime + sessionTimeout)))
+      assert(session.claimData === Json.obj("exp" -> (JwtTime.now + sessionTimeout)))
       assert(!session.isEmpty) // There is the expiration date in the claim
     }
 
@@ -60,23 +58,23 @@ class JwtSessionCustomSpec extends PlaySpec with OneAppPerSuite with BeforeAndAf
     }
 
     "deserialize" in {
+      implicit val configuration = new JwtConfiguration(app) {
+        override val options = JwtOptions(expiration = false)
+      }
+
       assert(JwtSession.deserialize(tokenCustom) === sessionCustom)
     }
   }
 
-  val sessionHeaderExp = Some("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJleHAiOjEzMDA4MTkzNjB9.nUA_47EPTArR_imUGiIldicJugWWjlH8miDhiwe3RcAVgCYyO7Q0LXkj504DMkRDUZKPbGKXlNxTKeKGz-xHEQ")
-  val sessionHeaderUser = Some("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJleHAiOjEzMDA4MTkzNjAsInVzZXIiOnsiaWQiOjEsIm5hbWUiOiJQYXVsIn19.NfNWg47eQdH6IY-AXo_c_Zl9dMyhBev0E2XmvjLKluLf9w8kqe1Nozp4FxLB1eCEuqUuMnfqgCcq66psH5zYlw")
-  val sessionHeaderExp2 = Some("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJleHAiOjEzMDA4MTkzNzF9.huJo47S37DjyAcS6POb7djzyFL0fOlk9ewaUfbEbHAnBZKpNFPvoo4U0NHrxaolH0RFd3DeN7vHQm61VBBbX5A")
-
   "RichResult" must {
     "access app with no user" in {
-      val result = get(classicAction)
+      val result1 = get(classicAction)
       val result2 = get(securedAction)
 
-      status(result) mustEqual OK
+      status(result1) mustEqual OK
       status(result2) mustEqual UNAUTHORIZED
-      jwtHeader(result) mustEqual sessionHeaderExp
-      jwtHeader(result2) mustEqual None
+      jwtHeader(result1) must not be empty
+      jwtHeader(result2) must be (empty)
     }
 
     "fail to login" in {
@@ -88,31 +86,47 @@ class JwtSessionCustomSpec extends PlaySpec with OneAppPerSuite with BeforeAndAf
     "login" in {
       val result = post(loginAction, Json.obj("username" -> "whatever", "password" -> "p4ssw0rd"))
       status(result) mustEqual OK
-      jwtHeader(result) mustEqual sessionHeaderUser
+      jwtHeader(result)
+        .map(JwtToken.decode(_)(jwtJson))
+        .flatMap(_.claim.content.asOpt[JsObject]((JsPath \ 'user).read[JsObject])) mustEqual Some(userJson)
     }
 
     "access app with user" in {
-      val result = get(classicAction, sessionHeaderUser)
-      val result2 = get(securedAction, sessionHeaderUser)
+      val token = JwtToken.encode(
+        JwtClaim(Json.obj("user" -> userJson)),
+        JwtUtils.getSigningKey(secretKey.getBytes("ISO-8859-1"), JwtAlgorithm.HS512),
+        JwtAlgorithm.HS512
+      ).token
 
-      status(result) mustEqual OK
+      val result1 = get(classicAction, Some(token))
+      val result2 = get(securedAction, Some(token))
+
+      status(result1) mustEqual OK
       status(result2) mustEqual OK
-      jwtHeader(result) mustEqual sessionHeaderUser
-      jwtHeader(result2) mustEqual sessionHeaderUser
-    }
-
-    "move to the future!" in {
-      jwtTime = mockTime(validTime + sessionTimeout + 1)
+      jwtHeader(result1)
+        .map(JwtToken.decode(_)(jwtJson))
+        .flatMap(_.claim.content.asOpt[JsObject]((JsPath \ 'user).read[JsObject])) mustEqual Some(userJson)
+      jwtHeader(result2)
+        .map(JwtToken.decode(_)(jwtJson))
+        .flatMap(_.claim.content.asOpt[JsObject]((JsPath \ 'user).read[JsObject])) mustEqual Some(userJson)
     }
 
     "timeout session" in {
-      val result = get(classicAction, sessionHeaderUser)
-      val result2 = get(securedAction, sessionHeaderUser)
+      val token = JwtToken.encode(
+        JwtClaim(Json.obj("user" -> userJson), exp = Some(JwtTime.now - 30)),
+        JwtUtils.getSigningKey(secretKey.getBytes("ISO-8859-1"), JwtAlgorithm.HS512),
+        JwtAlgorithm.HS512
+      ).token
 
-      status(result) mustEqual OK
+      val result1 = get(classicAction, Some(token))
+      val result2 = get(securedAction, Some(token))
+
+      status(result1) mustEqual OK
       status(result2) mustEqual UNAUTHORIZED
-      jwtHeader(result) mustEqual sessionHeaderExp2
-      jwtHeader(result2) mustEqual None
+      jwtHeader(result1)
+        .map(JwtToken.decode(_)(jwtJson))
+        .flatMap(_.claim.content.asOpt[JsObject]((JsPath \ 'user).read[JsObject])) mustEqual None
+      jwtHeader(result2) must be (empty)
     }
 
     "logout" in {
@@ -122,13 +136,15 @@ class JwtSessionCustomSpec extends PlaySpec with OneAppPerSuite with BeforeAndAf
     }
 
     "access app with no user again" in {
-      val result = get(classicAction)
+      val result1 = get(classicAction)
       val result2 = get(securedAction)
 
-      status(result) mustEqual OK
+      status(result1) mustEqual OK
       status(result2) mustEqual UNAUTHORIZED
-      jwtHeader(result) mustEqual sessionHeaderExp2
-      jwtHeader(result2) mustEqual None
+      jwtHeader(result1)
+        .map(JwtToken.decode(_)(jwtJson))
+        .flatMap(_.claim.content.asOpt[JsObject]((JsPath \ 'user).read[JsObject])) mustEqual None
+      jwtHeader(result2) must be (empty)
     }
   }
 }

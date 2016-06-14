@@ -32,12 +32,6 @@ case class DataEntry(
 
 trait Fixture {
 
-  def mockTime(mockNow: Long): JwtTime = {
-    new JwtTime {
-      override def now: Long = mockNow
-    }
-  }
-
   val secretKey = "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
   val secretKeyBytes = secretKey.getBytes("UTF-8")
   val secretKeyBase64 = JwtBase64.encodeString(secretKeyBytes)
@@ -45,21 +39,6 @@ trait Fixture {
   def secretKeyOf(alg: JwtAlgorithm): SecretKeySpec = secretKeyOf(secretKeyBytes, alg)
 
   val expiration: Long = 1300819380
-  val beforeExpiration: Long = expiration - 1
-  val afterExpiration: Long = expiration + 1
-
-  def mockBeforeExpiration = mockTime(beforeExpiration)
-  def mockAfterExpiration = mockTime(afterExpiration)
-
-  val notBefore: Long = 1300819320
-  val beforeNotBefore: Long = notBefore - 1
-  val afterNotBefore: Long = notBefore + 1
-
-  def mockBeforeNotBefore = mockTime(beforeNotBefore)
-  def mockAfterNotBefore = mockTime(afterNotBefore)
-
-  val validTime: Long = (expiration + notBefore) / 2
-  def mockValidTime = mockTime(validTime)
 
   val claim = s"""{"iss":"joe","exp":$expiration,"http://example.com/is_root":true}"""
   val claimClassString = JwtClaim("""{"http://example.com/is_root":true}""", iss = Option("joe"), exp = Option(expiration))

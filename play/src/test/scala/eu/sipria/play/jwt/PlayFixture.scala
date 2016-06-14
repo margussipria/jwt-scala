@@ -21,8 +21,9 @@ trait PlayFixture extends Fixture {
 
   implicit val userFormat = Json.format[User]
 
-  implicit def jwtTime: JwtTime
   implicit def app: Application
+
+  implicit val configuration = app.injector.instanceOf[JwtConfiguration]
 
   def claimClass: JwtClaim[JsObject] = claimClassString.copy(content = JwtPlayJson.parse(claimClassString.content))
 
@@ -57,7 +58,7 @@ trait PlayFixture extends Fixture {
   def get(action: EssentialAction, header: Option[String] = None) = {
     implicit val mat: Materializer = materializer
     val request = header match {
-      case Some(h) => FakeRequest(GET, "/something").withHeaders((JwtSession.getHeaderName, h))
+      case Some(h) => FakeRequest(GET, "/something").withHeaders((configuration.headerName, h))
       case _ => FakeRequest(GET, "/something")
     }
 
@@ -69,5 +70,5 @@ trait PlayFixture extends Fixture {
     call(action, FakeRequest(POST, "/something").withJsonBody(body))
   }
 
-  def jwtHeader(of: Future[Result])(implicit timeout: Timeout): Option[String] = header(JwtSession.getHeaderName, of)(timeout)
+  def jwtHeader(of: Future[Result])(implicit timeout: Timeout): Option[String] = header(configuration.headerName, of)(timeout)
 }

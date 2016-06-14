@@ -14,7 +14,7 @@ case class JwtToken[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], data
 
   override def toString: String = token
 
-  protected def validateTiming(options: JwtOptions)(implicit jwtTime: JwtTime): Boolean = {
+  protected def validateTiming(options: JwtOptions): Boolean = {
     val maybeExpiration: Option[Long] = {
       if (options.expiration) claim.exp else None
     }
@@ -23,14 +23,14 @@ case class JwtToken[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], data
       if (options.notBefore) claim.nbf else None
     }
 
-    jwtTime.validateNowIsBetween(
+    JwtTime.validateNowIsBetween(
       maybeNotBefore.map(_ - options.leeway),
       maybeExpiration.map(_ + options.leeway)
     )
   }
 
   // Validation when both key and algorithm
-  protected def validate(options: JwtOptions, verify: (Array[Byte], Array[Byte], JwtAlgorithm) => Boolean)(implicit jwtTime: JwtTime): Boolean = {
+  protected def validate(options: JwtOptions, verify: (Array[Byte], Array[Byte], JwtAlgorithm) => Boolean): Boolean = {
     if (options.signature) {
       val maybeAlg = header.alg
 
@@ -46,7 +46,7 @@ case class JwtToken[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], data
     validateTiming(options)
   }
 
-  def validate(options: JwtOptions)(implicit jwtTime: JwtTime): Try[Boolean] = Try {
+  def validate(options: JwtOptions): Try[Boolean] = Try {
     if (options.signature && !signature.isEmpty) {
       throw new JwtNonEmptySignatureException()
     } else if (options.signature && header.alg.isDefined) {
@@ -56,9 +56,9 @@ case class JwtToken[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], data
     validateTiming(options)
   }
 
-  def validate(implicit jwtTime: JwtTime): Try[Boolean] = validate(JwtOptions.DEFAULT)
+  def validate: Try[Boolean] = validate(JwtOptions.DEFAULT)
 
-  def validate(key: Key, algorithms: Seq[JwtAlgorithm], options: JwtOptions = JwtOptions.DEFAULT)(implicit jwtTime: JwtTime): Try[Boolean] = Try {
+  def validate(key: Key, algorithms: Seq[JwtAlgorithm], options: JwtOptions = JwtOptions.DEFAULT): Try[Boolean] = Try {
     validate(options, (data: Array[Byte], signature: Array[Byte], algorithm: JwtAlgorithm) => algorithm match {
       case alg: JwtAsymmetricAlgorithm  => validateAlgorithm(alg, algorithms) && JwtUtils.verify(data, signature, key, alg)
       case alg: JwtHmacAlgorithm        => validateAlgorithm(alg, algorithms) && JwtUtils.verify(data, signature, key, alg)
@@ -71,11 +71,11 @@ case class JwtToken[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], data
     algorithms.map(_.fullName).contains(algorithm.fullName)
   }
 
-  def isValid(options: JwtOptions)(implicit jwtTime: JwtTime): Boolean = validate(options).getOrElse(default = false)
+  def isValid(options: JwtOptions): Boolean = validate(options).getOrElse(default = false)
 
-  def isValid()(implicit jwtTime: JwtTime): Boolean = isValid(JwtOptions.DEFAULT)
+  def isValid: Boolean = isValid(JwtOptions.DEFAULT)
 
-  def isValid(key: Key, algorithms: Seq[JwtAlgorithm], options: JwtOptions = JwtOptions.DEFAULT)(implicit jwtTime: JwtTime) = {
+  def isValid(key: Key, algorithms: Seq[JwtAlgorithm], options: JwtOptions = JwtOptions.DEFAULT) = {
     validate(key, algorithms, options).getOrElse(default = false)
   }
 }
@@ -109,7 +109,7 @@ object JwtToken {
     JwtToken(jwtJson.parseHeader(header), jwtJson.parseClaim(claim), data, signature)
   }
 
-  def decodeAndValidate[JsonType](token: String, options: JwtOptions)(implicit jwtJson: JwtCore[JsonType], jwtTime: JwtTime): Try[JwtToken[JsonType]] = {
+  def decodeAndValidate[JsonType](token: String, options: JwtOptions)(implicit jwtJson: JwtCore[JsonType]): Try[JwtToken[JsonType]] = {
     val jwtToken = decode(token)
     jwtToken.validate(options) flatMap {
       case true => Success(jwtToken)
@@ -117,13 +117,12 @@ object JwtToken {
     }
   }
 
-  def decodeAndValidate[JsonType](token: String)(implicit jwtJson: JwtCore[JsonType], jwtTime: JwtTime): Try[JwtToken[JsonType]] = {
+  def decodeAndValidate[JsonType](token: String)(implicit jwtJson: JwtCore[JsonType]): Try[JwtToken[JsonType]] = {
     decodeAndValidate(token, JwtOptions.DEFAULT)
   }
 
   def decodeAndValidate[JsonType](token: String, key: Key, algorithms: Seq[JwtAlgorithm], options: JwtOptions = JwtOptions.DEFAULT)(
-    implicit jwtJson: JwtCore[JsonType],
-    jwtTime: JwtTime
+    implicit jwtJson: JwtCore[JsonType]
   ): Try[JwtToken[JsonType]] = {
 
     val jwtToken = decode(token)

@@ -4,8 +4,7 @@ import java.time.Instant
 
 import eu.sipria.jwt.exceptions.{JwtExpirationException, JwtNotBeforeException}
 
-/** Util object to handle time operations */
-class JwtTime {
+object JwtTime {
   /** Returns the number of seconds since the 01.01.1970
     *
     * @return Returns the number of seconds since the 01.01.1970
@@ -47,8 +46,6 @@ class JwtTime {
       case _: JwtExpirationException => false
     }
   }
-}
 
-object JwtTime {
   def format(time: Long): String = Instant.ofEpochSecond(time).toString
 }

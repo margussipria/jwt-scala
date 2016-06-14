@@ -33,6 +33,8 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
     assertResult(d.token, d.alg.fullName) { JwtToken.encode(d.headerClass, claimClass, JwtUtils.getSigningKeyFromBase64(key, d.alg)).toString }
   }
 
+  val jwtOptions = JwtOptions(expiration = false, notBefore = false)
+
   describe("JwtJson") {
     it("should encode with no algorithm") {
       assertResult(tokenEmpty, "Unsigned key") { JwtToken.encode(headerEmptyJson, claimJson).toString }
@@ -47,18 +49,16 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
     }
 
     it("should decode") {
-      implicit val jwtTime = mockValidTime
       data foreach { d =>
         val jwtToken = JwtToken(d.headerClass, claimClass, d.header64 + "." + claim64, d.signature)
 
         JwtToken.decode(d.token) should be (jwtToken)
 
-        jwtToken.isValid(secretKeyOf(d.alg), JwtAlgorithm.allHmac) should be (true)
+        jwtToken.isValid(secretKeyOf(d.alg), JwtAlgorithm.allHmac, jwtOptions) should be (true)
       }
     }
 
     it("should be symmetric") {
-      implicit val jwtTime = mockValidTime
       data foreach { d =>
         val token = JwtToken.encode(
           jwtJson.parse(d.header),
@@ -67,7 +67,7 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
         ).toString
         val decoded = JwtToken.decode(token)
 
-        decoded.isValid(secretKeyOf(d.alg), JwtAlgorithm.allHmac, JwtOptions.DEFAULT) should be (true)
+        decoded.isValid(secretKeyOf(d.alg), JwtAlgorithm.allHmac, jwtOptions) should be (true)
 
         decoded.header should be (d.headerClass)
         decoded.claim should be (claimClass)
@@ -80,7 +80,7 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
         val jwtToken = JwtToken.decode(token)
 
         assert(
-          jwtToken.header === d.headerClass && jwtToken.claim === claimClass && jwtToken.isValid(randomRSAKey.getPublic, JwtAlgorithm.allRSA),
+          jwtToken.header === d.headerClass && jwtToken.claim === claimClass && jwtToken.isValid(randomRSAKey.getPublic, JwtAlgorithm.allRSA, jwtOptions),
           d.alg.fullName
         )
       }
@@ -91,44 +91,41 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
         val jwtToken = JwtToken.decode(token)
 
         assert(
-          jwtToken.header === d.headerClass && jwtToken.claim === claimClass && jwtToken.isValid(randomECKey.getPublic, JwtAlgorithm.allECDSA),
+          jwtToken.header === d.headerClass && jwtToken.claim === claimClass && jwtToken.isValid(randomECKey.getPublic, JwtAlgorithm.allECDSA, jwtOptions),
           d.alg.fullName
         )
       }
     }
 
     it("should validate") {
-      implicit val jwtTime = mockValidTime
-
       dataJson foreach { d =>
         val success = JwtToken(d.headerClass, claimClass, d.header64 + "." + claim64,  d.signature)
         assertResult(success, d.alg.fullName) { JwtToken.decode(d.token) }
-        success.isValid(secretKeyOf(d.alg), JwtAlgorithm.allHmac, JwtOptions.DEFAULT) should be (true)
+        success.isValid(secretKeyOf(d.alg), JwtAlgorithm.allHmac, jwtOptions) should be (true)
       }
 
       dataRSAJson foreach { d =>
         val success = JwtToken(d.headerClass, claimClass, d.header64 + "." + claim64,  d.signature)
         assertResult(success, d.alg.fullName) { JwtToken.decode(d.token) }
-        success.isValid(jwtPublicKey(publicKeyRSA, d.alg), JwtAlgorithm.allRSA, JwtOptions.DEFAULT) should be (true)
+        success.isValid(jwtPublicKey(publicKeyRSA, d.alg), JwtAlgorithm.allRSA, jwtOptions) should be (true)
       }
     }
 
     it("should fail to validate when now is after expiration date") {
-      implicit val jwtTime = mockAfterExpiration
+      val testExpiration = claimClass.copy(nbf = None, exp = Option(JwtTime.now - 30))
 
       dataJson foreach { d =>
-        val jwtToken = JwtToken.decode(d.token)
-
         val hmacKey = jwtPublicKey(secretKeyBase64, d.alg)
+        val jwtToken = JwtToken.encode(testExpiration, hmacKey, d.alg)
 
         intercept[JwtExpirationException] { jwtToken.validate(hmacKey, JwtAlgorithm.allHmac).get }
         assert(jwtToken.validate(hmacKey, JwtAlgorithm.allHmac).isFailure)
       }
 
       dataRSAJson foreach { d =>
-        val jwtToken = JwtToken.decode(d.token)
-
+        val rsaPrivateKey = jwtPrivateKey(privateKeyRSA, d.alg)
         val rsaPublicKey = jwtPublicKey(publicKeyRSA, d.alg)
+        val jwtToken = JwtToken.encode(testExpiration, rsaPrivateKey, d.alg)
 
         intercept[JwtExpirationException] { jwtToken.validate(rsaPublicKey, JwtAlgorithm.allRSA).get }
         assert(jwtToken.validate(rsaPublicKey, JwtAlgorithm.allRSA).isFailure)
@@ -136,67 +133,43 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
     }
 
     it("should success to validate when now is after expiration date with options") {
-      implicit val jwtTime = mockAfterExpiration
+      val testExpiration = claimClass.copy(nbf = None, exp = Option(JwtTime.now - 30))
       val options = JwtOptions(expiration = false)
 
       dataJson foreach { d =>
-        val jwtToken = JwtToken.decode(d.token)
-
         val hmacKey = jwtPublicKey(secretKeyBase64, d.alg)
+        val jwtToken = JwtToken.encode(testExpiration, hmacKey, d.alg)
 
         assert(jwtToken.validate(hmacKey, JwtAlgorithm.allHmac, options).isSuccess)
         jwtToken.isValid(hmacKey, JwtAlgorithm.allHmac, options) should be (true)
       }
 
       dataRSAJson foreach { d =>
-        val jwtToken = JwtToken.decode(d.token)
-
+        val rsaPrivateKey = jwtPrivateKey(privateKeyRSA, d.alg)
         val rsaPublicKey = jwtPublicKey(publicKeyRSA, d.alg)
+        val jwtToken = JwtToken.encode(testExpiration, rsaPrivateKey, d.alg)
 
         assert(jwtToken.validate(rsaPublicKey, JwtAlgorithm.allRSA, options).isSuccess)
         jwtToken.isValid(rsaPublicKey, JwtAlgorithm.allRSA, options) should be (true)
       }
     }
 
-    it("should invalidate expired tokens") {
-      implicit val jwtTime = mockAfterExpiration
-
-      data foreach { d =>
-        val jwtToken = JwtToken.decode(d.token)
-
-        val hmacKey = jwtPublicKey(secretKeyBase64, d.alg)
-
-        intercept[JwtExpirationException] { jwtToken.validate(hmacKey, JwtAlgorithm.allHmac).get }
-        assertResult(false, d.alg.fullName) { jwtToken.isValid(hmacKey, JwtAlgorithm.allHmac) }
-      }
-
-      dataRSA foreach { d =>
-        val jwtToken = JwtToken.decode(d.token)
-
-        val rsaPublicKey = jwtPublicKey(publicKeyRSA, d.alg)
-
-        intercept[JwtExpirationException] { jwtToken.validate(rsaPublicKey, JwtAlgorithm.allRSA).get }
-        assertResult(false, d.alg.fullName) { jwtToken.isValid(rsaPublicKey, JwtAlgorithm.allRSA) }
-      }
-    }
-
     it("should validate expired tokens with leeway") {
-      implicit val jwtTime = mockAfterExpiration
+      val testExpiration = claimClass.copy(nbf = None, exp = Option(JwtTime.now - 30))
       val options = JwtOptions(leeway = 60)
 
       data foreach { d =>
-        val jwtToken = JwtToken.decode(d.token)
-
         val hmacKey = jwtPublicKey(secretKeyBase64, d.alg)
+        val jwtToken = JwtToken.encode(testExpiration, hmacKey, d.alg)
 
         assert(jwtToken.validate(hmacKey, JwtAlgorithm.allHmac, options).isSuccess)
         assertResult(true, d.alg.fullName) { jwtToken.isValid(hmacKey, JwtAlgorithm.allHmac, options) }
       }
 
       dataRSA foreach { d =>
-        val jwtToken = JwtToken.decode(d.token)
-
+        val rsaPrivateKey = jwtPrivateKey(privateKeyRSA, d.alg)
         val rsaPublicKey = jwtPublicKey(publicKeyRSA, d.alg)
+        val jwtToken = JwtToken.encode(testExpiration, rsaPrivateKey, d.alg)
 
         assert(jwtToken.validate(rsaPublicKey, JwtAlgorithm.allRSA, options).isSuccess)
         assertResult(true, d.alg.fullName) { jwtToken.isValid(rsaPublicKey, JwtAlgorithm.allRSA, options) }
@@ -204,11 +177,9 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
     }
 
     it("should invalidate early tokens") {
-      implicit val jwtTime = mockBeforeNotBefore
+      val claimNotBefore = claimClass.copy(nbf = Option(JwtTime.now + 30), exp = None)
 
       data foreach { d =>
-        val claimNotBefore = claimClass.copy(nbf = Option(notBefore))
-
         val hmacKey = jwtPublicKey(secretKeyBase64, d.alg)
 
         val token = JwtToken.encode(claimNotBefore, hmacKey, d.alg)
@@ -218,8 +189,6 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
       }
 
       dataRSA foreach { d =>
-        val claimNotBefore = claimClass.copy(nbf = Option(notBefore))
-
         val rsaPrivateKey = jwtPrivateKey(privateKeyRSA, d.alg)
         val rsaPublicKey = jwtPublicKey(publicKeyRSA, d.alg)
 
@@ -231,12 +200,10 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
     }
 
     it("should validate early tokens with leeway") {
-      implicit val jwtTime = mockBeforeNotBefore
+      val claimNotBefore = claimClass.copy(nbf = Option(JwtTime.now + 30), exp = None)
       val options = JwtOptions(leeway = 60)
 
       data foreach { d =>
-        val claimNotBefore = claimClass.copy(nbf = Option(notBefore))
-
         val hmacKey = jwtPublicKey(secretKeyBase64, d.alg)
 
         val token = JwtToken.encode(claimNotBefore, hmacKey, d.alg)
@@ -246,8 +213,6 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
       }
 
       dataRSA foreach { d =>
-        val claimNotBefore = claimClass.copy(nbf = Option(notBefore))
-
         val rsaPrivateKey = jwtPrivateKey(privateKeyRSA, d.alg)
         val rsaPublicKey = jwtPublicKey(publicKeyRSA, d.alg)
 
@@ -257,34 +222,15 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
         assertResult(false, d.alg.fullName) { token.isValid(rsaPublicKey, JwtAlgorithm.allRSA) }
       }
     }
-/*
-    it("should invalidate wrong keys") {
-      implicit val jwtTime = mockValidTime
 
-      data foreach { d =>
-        val jwtToken = JwtToken(d.token)
-
-        intercept[JwtValidationException] { jwtToken.validate("wrong key", JwtAlgorithm.allHmac) }
-        assertResult(false, d.alg.fullName) { jwtToken.isValid("wrong key", JwtAlgorithm.allHmac) }
-      }
-
-      dataRSA foreach { d =>
-        val jwtToken = JwtToken(d.token)
-
-        assertResult(false, d.alg.fullName) { jwtToken.isValid("wrong key", JwtAlgorithm.allRSA) }
-      }
-    }
-*/
     it("should fail on non-exposed algorithms") {
-      implicit val jwtTime = mockValidTime
-
       data foreach { d =>
         val jwtToken = JwtToken.decode(d.token)
 
         val hmacKey = jwtPublicKey(secretKeyBase64, d.alg)
 
-        intercept[JwtValidationException] { jwtToken.validate(hmacKey, Seq.empty[JwtHmacAlgorithm]).get }
-        assertResult(false, d.alg.fullName) { jwtToken.isValid(hmacKey, Seq.empty[JwtHmacAlgorithm]) }
+        intercept[JwtValidationException] { jwtToken.validate(hmacKey, Seq.empty[JwtHmacAlgorithm], jwtOptions).get }
+        assertResult(false, d.alg.fullName) { jwtToken.isValid(hmacKey, Seq.empty[JwtHmacAlgorithm], jwtOptions) }
       }
 
       data foreach { d =>
@@ -292,8 +238,8 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
 
         val hmacKey = jwtPublicKey(secretKeyBase64, d.alg)
 
-        intercept[JwtValidationException] { jwtToken.validate(hmacKey, JwtAlgorithm.allRSA).get }
-        assertResult(false, d.alg.fullName) { jwtToken.isValid(hmacKey, JwtAlgorithm.allRSA) }
+        intercept[JwtValidationException] { jwtToken.validate(hmacKey, JwtAlgorithm.allRSA, jwtOptions).get }
+        assertResult(false, d.alg.fullName) { jwtToken.isValid(hmacKey, JwtAlgorithm.allRSA, jwtOptions) }
       }
 
       dataRSA foreach { d =>
@@ -301,8 +247,8 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
 
         val rsaPublicKey = jwtPublicKey(publicKeyRSA, d.alg)
 
-        intercept[JwtValidationException] { jwtToken.validate(rsaPublicKey, JwtAlgorithm.allHmac).get }
-        assertResult(false, d.alg.fullName) { jwtToken.isValid(rsaPublicKey, JwtAlgorithm.allHmac) }
+        intercept[JwtValidationException] { jwtToken.validate(rsaPublicKey, JwtAlgorithm.allHmac, jwtOptions).get }
+        assertResult(false, d.alg.fullName) { jwtToken.isValid(rsaPublicKey, JwtAlgorithm.allHmac, jwtOptions) }
       }
     }
 
@@ -313,22 +259,21 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
     }
 
     it("should skip expiration validation depending on options") {
-      implicit val jwtTime = mockAfterExpiration
       val options = JwtOptions(expiration = false)
 
+      val claimExpiration = claimClass.copy(nbf = None, exp = Option(JwtTime.now - 30))
       data foreach { d =>
-        val jwtToken = JwtToken.decode(d.token)
-
         val hmacKey = jwtPublicKey(secretKeyBase64, d.alg)
+        val jwtToken = JwtToken.encode(claimExpiration, hmacKey, d.alg)
 
         jwtToken.validate(hmacKey, JwtAlgorithm.allHmac, options)
         assertResult(true, d.alg.fullName) { jwtToken.isValid(hmacKey, JwtAlgorithm.allHmac, options) }
       }
 
       dataRSA foreach { d =>
-        val jwtToken = JwtToken.decode(d.token)
-
+        val rsaPrivateKey = jwtPrivateKey(privateKeyRSA, d.alg)
         val rsaPublicKey = jwtPublicKey(publicKeyRSA, d.alg)
+        val jwtToken = JwtToken.encode(claimExpiration, rsaPrivateKey, d.alg)
 
         jwtToken.validate(rsaPublicKey, JwtAlgorithm.allRSA, options)
         assertResult(true, d.alg.fullName) { jwtToken.isValid(rsaPublicKey, JwtAlgorithm.allRSA, options) }
@@ -336,12 +281,10 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
     }
 
     it("should skip notBefore validation depending on options") {
-      implicit val jwtTime = mockBeforeNotBefore
       val options = JwtOptions(notBefore = false)
 
+      val claimNotBefore = claimClass.copy(nbf = Option(JwtTime.now + 30), exp = None)
       data foreach { d =>
-        val claimNotBefore = claimClass.copy(nbf = Option(notBefore))
-
         val hmacKey = jwtPublicKey(secretKeyBase64, d.alg)
 
         val token = JwtToken.encode(claimNotBefore, hmacKey, d.alg)
@@ -351,8 +294,6 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
       }
 
       dataRSA foreach { d =>
-        val claimNotBefore = claimClass.copy(nbf = Option(notBefore))
-
         val rsaPrivateKey = jwtPrivateKey(privateKeyRSA, d.alg)
         val rsaPublicKey = jwtPublicKey(publicKeyRSA, d.alg)
 
@@ -364,8 +305,7 @@ abstract class JwtJsonCommonSpec[J] extends UnitSpec with JsonCommonFixture[J] {
     }
 
     it("should skip signature validation depending on options") {
-      implicit val jwtTime = mockValidTime
-      val options = JwtOptions(signature = false)
+      val options = JwtOptions(signature = false, expiration = false, notBefore = false)
 
       data foreach { d =>
         val jwtToken = JwtToken.decode(d.token)

@@ -1,6 +1,5 @@
 package controllers
 
-import eu.sipria.jwt.JwtTime
 import eu.sipria.play.jwt._
 import models.User
 import play.api.mvc.Results._
@@ -13,16 +12,17 @@ class AuthenticatedRequest[A](val user: User, request: Request[A]) extends Wrapp
 
 trait Secured {
   implicit def app: play.api.Application
+  implicit val configuration: JwtConfiguration = app.injector.instanceOf[JwtConfiguration]
 
   val Authenticated = new AuthenticatedAction
   val Admin = new AdminAction
 }
 
-class AuthenticatedAction(implicit jwtTime: JwtTime, app: play.api.Application) extends ActionBuilder[AuthenticatedRequest] {
+class AuthenticatedAction(implicit configuration: JwtConfiguration) extends ActionBuilder[AuthenticatedRequest] {
   def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]) = {
     Try {
       request.jwtSession.getAs[User]("user") match {
-        case Some(user) => block(new AuthenticatedRequest(user, request)).map(_.refreshJwtSession(request, jwtTime, app))(executionContext)
+        case Some(user) => block(new AuthenticatedRequest(user, request)).map(_.refreshJwtSession(request, configuration))(executionContext)
         case _ => Future.successful(Unauthorized)
       }
     } getOrElse {
@@ -31,14 +31,14 @@ class AuthenticatedAction(implicit jwtTime: JwtTime, app: play.api.Application) 
   }
 }
 
-class AdminAction(implicit jwtTime: JwtTime, app: play.api.Application) extends ActionBuilder[AuthenticatedRequest] {
+class AdminAction(implicit configuration: JwtConfiguration) extends ActionBuilder[AuthenticatedRequest] {
   private lazy val action = new AuthenticatedAction
 
   def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]) = {
     action.invokeBlock(request, { request: AuthenticatedRequest[A] =>
       request.user match {
         case user if user.isAdmin => block(new AuthenticatedRequest(user, request))
-        case user => Future.successful(Forbidden.refreshJwtSession(request, jwtTime, app))
+        case user => Future.successful(Forbidden.refreshJwtSession(request, configuration))
       }
     })
   }

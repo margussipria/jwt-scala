@@ -9,20 +9,20 @@ package object claim {
     def about(subject: String): JwtClaim[JsonType] = claim.copy(sub = Option(subject))
     def withId(id: String): JwtClaim[JsonType] = claim.copy(jti = Option(id))
 
-    def expiresIn(seconds: Long)(implicit jwtTime: JwtTime): JwtClaim[JsonType] = claim.copy(exp = Option(jwtTime.now + seconds))
+    def expiresIn(seconds: Long): JwtClaim[JsonType] = claim.copy(exp = Option(JwtTime.now + seconds))
     def expiresAt(seconds: Long): JwtClaim[JsonType] = claim.copy(exp = Option(seconds))
-    def expiresNow(implicit jwtTime: JwtTime): JwtClaim[JsonType] = claim.copy(exp = Option(jwtTime.now))
+    def expiresNow: JwtClaim[JsonType] = claim.copy(exp = Option(JwtTime.now))
 
-    def startsIn(seconds: Long)(implicit jwtTime: JwtTime): JwtClaim[JsonType] = claim.copy(nbf = Option(jwtTime.now + seconds))
+    def startsIn(seconds: Long): JwtClaim[JsonType] = claim.copy(nbf = Option(JwtTime.now + seconds))
     def startsAt(seconds: Long): JwtClaim[JsonType] = claim.copy(nbf = Option(seconds))
-    def startsNow(implicit jwtTime: JwtTime): JwtClaim[JsonType] = claim.copy(nbf = Option(jwtTime.now))
+    def startsNow: JwtClaim[JsonType] = claim.copy(nbf = Option(JwtTime.now))
 
-    def issuedIn(seconds: Long)(implicit jwtTime: JwtTime): JwtClaim[JsonType] = claim.copy(iat = Option(jwtTime.now + seconds))
+    def issuedIn(seconds: Long): JwtClaim[JsonType] = claim.copy(iat = Option(JwtTime.now + seconds))
     def issuedAt(seconds: Long): JwtClaim[JsonType] = claim.copy(iat = Option(seconds))
-    def issuedNow(implicit jwtTime: JwtTime): JwtClaim[JsonType] = claim.copy(iat = Option(jwtTime.now))
+    def issuedNow: JwtClaim[JsonType] = claim.copy(iat = Option(JwtTime.now))
 
-    def isValid(implicit jwtTime: JwtTime): Boolean = jwtTime.isNowIsBetween(claim.nbf, claim.exp)
-    def isValid(issuer: String)(implicit jwtTime: JwtTime): Boolean = claim.iss.contains(issuer) && isValid
-    def isValid(issuer: String, audience: String)(implicit jwtTime: JwtTime): Boolean = claim.aud.contains(audience) && isValid(issuer)
+    def isValid: Boolean = JwtTime.isNowIsBetween(claim.nbf, claim.exp)
+    def isValid(issuer: String): Boolean = claim.iss.contains(issuer) && isValid
+    def isValid(issuer: String, audience: String): Boolean = claim.aud.contains(audience) && isValid(issuer)
   }
 }

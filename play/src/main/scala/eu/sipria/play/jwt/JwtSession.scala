@@ -45,6 +45,9 @@ case class JwtSession(headerData: JsObject, claimData: JsObject) {
     get(fieldName).flatMap(value => reader.reads(value).asOpt)
   }
 
+  /** After retrieving the value, try to read it as T, if no value or fails, returns None. */
+  def getAs[T](implicit reader: Reads[T]): Option[T] = reader.reads(claimData).asOpt
+
   /** Alias of `get` */
   def apply(fieldName: String): Option[JsValue] = get(fieldName)
 

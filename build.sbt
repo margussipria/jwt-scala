@@ -10,7 +10,7 @@ val buildVersion = "0.7.1"
 
 val baseSettings = Seq(
   organization := "eu.sipria.jwt",
-  version := buildVersion,
+  version := "0.8.0-SNAPSHOT",
   scalaVersion := "2.11.8",
   //crossScalaVersions := Seq("2.10.6", "2.11.8"),
   //crossVersion := CrossVersion.binary,

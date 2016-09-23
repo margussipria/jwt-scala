@@ -39,6 +39,11 @@ class JwtConfiguration @Inject()(app: Application) {
     wrap[Configuration](app.configuration.getConfig("eu.sipria.play.jwt.options")).map { options =>
       JwtOptions(
         signature = wrap[Boolean](options.getBoolean("signature")).getOrElse(default = true),
+        issuer = wrap[String](options.getString("issuer")),
+        subject = wrap[String](options.getString("subject")),
+        audience = wrap[String](options.getString("audience")),
+        issuedAt = wrap[Long](options.getLong("issuedAt")),
+        jwtId = wrap[String](options.getString("jwtId")),
         expiration = wrap[Boolean](options.getBoolean("expiration")).getOrElse(default = true),
         notBefore = wrap[Boolean](options.getBoolean("notBefore")).getOrElse(default = true),
         leeway = wrap[Long](options.getLong("leeway")).getOrElse(default = 0)

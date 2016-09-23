@@ -14,6 +14,40 @@ case class JwtToken[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], data
 
   override def toString: String = token
 
+  override def equals(that: Any): Boolean = {
+    that match {
+      case that: JwtToken[_] => token.equals(that.token)
+      case that: String => token.equals(that)
+      case _ => false
+    }
+  }
+
+  override def hashCode: Int = token.hashCode
+
+  protected def validateOptions(options: JwtOptions): Boolean = {
+    if (options.issuer.isDefined && options.issuer != this.claim.iss) {
+      throw new JwtValidationException("Issuer didn't match required iss")
+    }
+
+    if (options.subject.isDefined && options.subject != this.claim.sub) {
+      throw new JwtValidationException("sub didn't match required sub")
+    }
+
+    if (options.audience.isDefined && options.audience != this.claim.aud) {
+      throw new JwtValidationException("Audience didn't match required aud")
+    }
+
+    if (options.issuedAt.isDefined && options.issuedAt != this.claim.iat) {
+      throw new JwtValidationException("Issued at didn't match required iat")
+    }
+
+    if (options.jwtId.isDefined && options.jwtId != this.claim.jti) {
+      throw new JwtValidationException("Jwt ID at didn't match required jwt")
+    }
+
+    validateTiming(options)
+  }
+
   protected def validateTiming(options: JwtOptions): Boolean = {
     val maybeExpiration: Option[Long] = {
       if (options.expiration) claim.exp else None
@@ -43,7 +77,7 @@ case class JwtToken[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], data
       }
     }
 
-    validateTiming(options)
+    validateOptions(options)
   }
 
   def validate(options: JwtOptions): Try[Boolean] = Try {
@@ -53,7 +87,7 @@ case class JwtToken[JsonType](header: JwtHeader, claim: JwtClaim[JsonType], data
       throw new JwtNonEmptyAlgorithmException()
     }
 
-    validateTiming(options)
+    validateOptions(options)
   }
 
   def validate: Try[Boolean] = validate(JwtOptions.DEFAULT)
@@ -87,15 +121,13 @@ object JwtToken {
     * @throws JwtLengthException if there is not 2 or 3 parts in the token
     */
   private def splitToken(token: String): (String, String, String, String, String) = {
-    val parts = token.split("\\.")
-
-    val signature = parts.length match {
-      case 2 => ""
-      case 3 => parts(2)
+    val Array(header, payload, signature) = token.split("\\.") match {
+      case parts if parts.length == 3 => parts
+      case parts if parts.length == 2 => parts :+ ""
       case _ => throw new JwtLengthException(s"Expected token [$token] to be composed of 2 or 3 parts separated by dots.")
     }
 
-    (parts(0), JwtBase64.decodeString(parts(0)), parts(1), JwtBase64.decodeString(parts(1)), signature)
+    (header, JwtBase64.decodeString(header), payload, JwtBase64.decodeString(payload), signature)
   }
 
   /** Will decode a JSON Web Token to JwtToken
@@ -110,10 +142,12 @@ object JwtToken {
   }
 
   def decodeAndValidate[JsonType](token: String, options: JwtOptions)(implicit jwtJson: JwtCore[JsonType]): Try[JwtToken[JsonType]] = {
-    val jwtToken = decode(token)
-    jwtToken.validate(options) flatMap {
-      case true => Success(jwtToken)
-      case false => Failure(new JwtValidationException("Could validate jwt token"))
+
+    Try(decode(token)) flatMap { jwtToken =>
+      jwtToken.validate(options) flatMap {
+        case true => Success(jwtToken)
+        case false => Failure(new JwtValidationException("Could validate jwt token"))
+      }
     }
   }
 
@@ -125,10 +159,11 @@ object JwtToken {
     implicit jwtJson: JwtCore[JsonType]
   ): Try[JwtToken[JsonType]] = {
 
-    val jwtToken = decode(token)
-    jwtToken.validate(key, algorithms, options) flatMap {
-      case true => Success(jwtToken)
-      case false => Failure(new JwtValidationException("Could validate jwt token"))
+    Try(decode(token)) flatMap { jwtToken =>
+      jwtToken.validate(key, algorithms, options) flatMap {
+        case true => Success(jwtToken)
+        case false => Failure(new JwtValidationException("Could validate jwt token"))
+      }
     }
   }
 
@@ -170,16 +205,15 @@ object JwtToken {
 
     (headerJson.alg, key) match {
       case (Some(alg: JwtHmacAlgorithm), key: SecretKey)        =>
-        new JwtToken(headerJson, claimJson, data, JwtBase64.encodeString(JwtUtils.sign(data, key, alg)))
+        JwtToken(headerJson, claimJson, data, JwtBase64.encodeString(JwtUtils.sign(data, key, alg)))
       case (Some(alg: JwtAsymmetricAlgorithm), key: PrivateKey) =>
-        new JwtToken(headerJson, claimJson, data, JwtBase64.encodeString(JwtUtils.sign(data, key, alg)))
+        JwtToken(headerJson, claimJson, data, JwtBase64.encodeString(JwtUtils.sign(data, key, alg)))
       case _ => throw validationException
     }
   }
 
 
-  /** An alias to `encode` which will provide an automatically generated header and allowing you to get rid of Option
-    * for the key and the algorithm.
+  /** An alias to `encode` which will provide an automatically generated header and allowing you to get rid of Option for the key and the algorithm.
     *
     * @return token
     * @param claim claimString
@@ -190,7 +224,7 @@ object JwtToken {
     encode(jwtJson.writeHeader(JwtHeader(algorithm)), jwtJson.writeClaim(claim), key)
   }
 
-  /** An alias of `encode` if you only want to pass a string as the key, the algorithm will be deduced from the header.
+  /** An alias of `encode` if you only want to pass a string as the key
     *
     * @return token
     * @param header the header to stringify as a JSON before encoding the token
